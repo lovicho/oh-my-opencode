@@ -7,6 +7,7 @@ import { describe, expect, test } from "bun:test"
 const corePackagePaths: readonly string[] = [
   "packages/utils",
   "packages/model-core",
+  "packages/omo-config-core",
   "packages/delegate-core",
   "packages/prompts-core",
   "packages/rules-engine",
@@ -33,6 +34,7 @@ const mcpPackagePaths: readonly string[] = [
 const adapterPackagePaths: readonly string[] = [
   "packages/omo-codex",
   "packages/omo-senpi",
+  "packages/senpi-task",
   "packages/omo-opencode",
   "packages/pi-goal",
   "packages/pi-webfetch",
