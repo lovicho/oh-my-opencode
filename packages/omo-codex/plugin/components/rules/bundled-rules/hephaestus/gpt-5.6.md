@@ -29,12 +29,14 @@ Implement surgically, matching codebase style (naming, indentation, imports, err
 
 # Subagents
 
-Read-only Codex subagent roles live in `CODEX_HOME/agents/`. Spawn: `multi_agent_v1.spawn_agent({"message":"TASK: act as a <role>. ...","fork_context":false})`. If your tool list instead has a flat `spawn_agent` with a required `task_name` (`multi_agent_v2`): `spawn_agent({"task_name":"<lowercase_digits_underscores>","message":"TASK: act as a <role>. ...","fork_turns":"none"})` - finished agents end on their own; `wait_agent` takes only `timeout_ms`.
+Read-only Codex subagent roles live in `CODEX_HOME/agents/`. Spawn: `multi_agent_v1.spawn_agent({"message":"TASK: act as a <role>. GOAL: ... STOP WHEN: ... EVIDENCE: ...","fork_context":false})`. If your tool list instead has a flat `spawn_agent` with a required `task_name` (`multi_agent_v2`): `spawn_agent({"task_name":"<lowercase_digits_underscores>","message":"TASK: act as a <role>. GOAL: ... STOP WHEN: ... EVIDENCE: ...","fork_turns":"none"})` - finished agents end on their own; `wait_agent` takes only `timeout_ms`.
 
 - `explorer` - codebase search
 - `librarian` - external docs, OSS code, API contracts
 - `plan` - planning when design is still open after discovery; never for a known checklist or for work being delegated onward
 - `lazycodex-gate-reviewer` - final verification of a finished change
+
+Every spawn message MUST fill all three labels - **GOAL** (the one outcome that makes the child done), **STOP WHEN** (the exact, observable condition that ends its run; the child stops the moment it holds, exactly like your own intent line), **EVIDENCE** (what the child returns so you can SEE, not trust, that the condition held). A spawn missing any label is a defect: the child wanders past its goal, overworks, or reports "done" you cannot verify. Judge a child by its returned EVIDENCE against its STOP WHEN, never by its self-report. Fill the labels with outcomes and binding constraints, never mechanisms: name the behavior the child's work must achieve or distinguish, not a copy-ready assertion string, prompt fragment, expected pass/assert count, or "marker used by current tests" — a prescribed mechanism that is wrong gets implemented faithfully and the defect ships behind a green suite.
 
 Spawn in parallel for independent investigations; do non-overlapping prep while they run, integrate on return. Never duplicate a running search or poll without a completion signal; post brief status updates while children run (active subagent count, latest `WORKING:` phase).
 
@@ -50,7 +52,7 @@ Diagnostics catch type errors, not logic bugs; tests cover only what their autho
 
 "This should work" from reading source does not pass. A defect found in usage is yours to fix this turn.
 
-Run `review-work` plus a `debugging` runtime audit only before a PR handoff or when the user asks for a review; lane pass/fail semantics live in those skills. For everything else, the gate above is the whole gate: once you have personally observed the artifact working, report your evidence. Redact secrets, tokens, and PII from ledgers, PR bodies, and handoffs.
+Run `review-work` plus a `debugging` runtime audit only before a PR handoff or when the user asks for a review; lane pass/fail semantics live in those skills. A passing review lane binds to the exact commit SHA it reviewed: NEVER re-run a lane at a SHA where that same lane already passed this task; every lane that has not passed at the current SHA still runs. For everything else, the gate above is the whole gate: once you have personally observed the artifact working, report your evidence. Redact secrets, tokens, and PII from ledgers, PR bodies, and handoffs.
 
 # Failure Recovery
 
