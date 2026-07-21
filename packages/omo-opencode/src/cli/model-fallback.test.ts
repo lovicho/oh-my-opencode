@@ -61,7 +61,7 @@ describe("generateModelConfig", () => {
             variant: "high",
           },
           {
-            model: "github-copilot/claude-opus-4.7",
+            model: "github-copilot/claude-opus-4.8",
             variant: "max",
           },
           {
@@ -203,7 +203,7 @@ describe("generateModelConfig", () => {
       const result = generateModelConfig(config)
 
       // #then
-      expect(result.agents?.sisyphus?.model).toBe("anthropic/claude-opus-4-7")
+      expect(result.agents?.sisyphus?.model).toBe("anthropic/claude-opus-4-8")
     })
 
     test("Sisyphus is created when multiple fallback providers are available", () => {
@@ -220,7 +220,7 @@ describe("generateModelConfig", () => {
       const result = generateModelConfig(config)
 
       // #then
-      expect(result.agents?.sisyphus?.model).toBe("anthropic/claude-opus-4-7")
+      expect(result.agents?.sisyphus?.model).toBe("anthropic/claude-opus-4-8")
     })
 
     test("Sisyphus resolves to gpt-5.5 medium when only OpenAI is available", () => {
@@ -528,7 +528,7 @@ describe("generateModelConfig", () => {
       const result = generateModelConfig(config)
 
       // #then should prefer native anthropic over gateway
-      expect(result.agents?.sisyphus?.model).toBe("anthropic/claude-opus-4-7")
+      expect(result.agents?.sisyphus?.model).toBe("anthropic/claude-opus-4-8")
     })
   })
 
@@ -556,7 +556,7 @@ describe("generateModelConfig", () => {
       const result = generateModelConfig(config)
 
       // #then OpenCode Go stays primary and MiniMax M3 ordering is preserved in fallbacks
-      expect(result.agents?.atlas?.model).toBe("opencode-go/kimi-k2.6")
+      expect(result.agents?.atlas?.model).toBe("opencode-go/kimi-k3")
       expect(result.agents?.atlas?.fallback_models?.[0]?.model).toBe("opencode-go/minimax-m3")
       expect(result.agents?.atlas?.fallback_models?.[1]?.model).toBe("minimax-coding-plan/MiniMax-M3")
       expect(result.agents?.atlas?.fallback_models?.[2]?.model).toBe("opencode-go/minimax-m2.7")
