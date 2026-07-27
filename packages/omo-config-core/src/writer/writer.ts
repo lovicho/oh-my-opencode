@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { dirname, join } from "node:path"
-import { parseJsoncSafe } from "@oh-my-opencode/utils"
+import { parseJsoncSafe } from "../internal/jsonc-parse"
 import { applyEdits, modify } from "jsonc-parser/lib/esm/main.js"
 import { resolveUserOmoConfigPath } from "../loader"
 import {
@@ -52,7 +52,7 @@ function writeBackup(path: string, content: string, fileSystem: typeof DEFAULT_W
 function resolveWritePath(options: UpdateOmoConfigOptions): string {
   const fileSystem = options.fileSystem ?? DEFAULT_WRITE_FILE_SYSTEM
   if (options.scope === "user") {
-    const jsoncPath = resolveUserOmoConfigPath(options.env, options.platform ?? process.platform)
+    const jsoncPath = resolveUserOmoConfigPath(options.env)
     if (fileSystem.existsSync(jsoncPath)) return jsoncPath
     const jsonPath = join(dirname(jsoncPath), "omo.json")
     return fileSystem.existsSync(jsonPath) ? jsonPath : jsoncPath

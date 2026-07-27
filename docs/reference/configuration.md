@@ -300,13 +300,13 @@ Domain-specific model delegation used by the `task()` tool. When Sisyphus delega
 
 | Category             | Default Model                   | Description                                    |
 | -------------------- | ------------------------------- | ---------------------------------------------- |
-| `visual-engineering` | `google/gemini-3.1-pro` (high)  | Frontend, UI/UX, design, animation             |
+| `visual-engineering` | `anthropic/claude-opus-5` (high) | Frontend, UI/UX, design, animation            |
 | `ultrabrain`         | `openai/gpt-5.6-sol` (xhigh)    | Deep logical reasoning, complex architecture   |
 | `deep`               | `openai/gpt-5.6-terra` (xhigh)  | Autonomous problem-solving, thorough research  |
 | `artistry`           | `google/gemini-3.1-pro` (high)  | Creative/unconventional approaches             |
-| `quick`              | `openai/gpt-5.4-mini`           | Trivial tasks, typo fixes, single-file changes |
+| `quick`              | `apitopia/kimi-for-coding-highspeed` | Trivial tasks, typo fixes, single-file changes |
 | `unspecified-low`    | `openai/gpt-5.6-luna` (xhigh)   | General tasks, low effort                      |
-| `unspecified-high`   | `anthropic/claude-opus-5` (max) | General tasks, high effort                   |
+| `unspecified-high`   | `apitopia/kimi-k3` (max)        | General tasks, high effort                     |
 | `writing`            | `kimi-for-coding/kimi-k3`          | Documentation, prose, technical writing        |
 
 > **Note**: Built-in category defaults are available automatically. User-defined category config merges over the built-in defaults or adds custom categories.
@@ -652,7 +652,7 @@ To disable the LSP MCP entirely:
 
 ### CodeGraph
 
-The `codegraph` MCP ships a pinned CodeGraph 1.4.1 binary; project stores built by older versions migrate automatically on first use, with no manual re-index. Two keys tune where it runs:
+The `codegraph` MCP ships a pinned CodeGraph 1.5.0 binary; managed installs provisioned at 1.0.1 or 1.4.1 upgrade automatically, and project stores built by older versions remain compatible without a manual re-index. Two keys tune where it runs:
 
 ```jsonc
 {
@@ -665,10 +665,16 @@ The `codegraph` MCP ships a pinned CodeGraph 1.4.1 binary; project stores built 
 
     // Extra exclude-only roots. Projects under these skip CodeGraph entirely.
     // Entries may be absolute, ~-relative, or relative to the home directory.
-    "excluded_roots": ["~/scratch/codegraph"]
+    "excluded_roots": ["~/scratch/codegraph"],
+
+    // Codex only: failed SessionStart initialization attempts back off from
+    // this base interval, doubling to a 24-hour cap. Minimum: 60000.
+    "session_start_cooldown_ms": 900000
   }
 }
 ```
+
+The Codex SessionStart bootstrap checks only `<projectRoot>/.codegraph/codegraph.db`; it never calls `codegraph status`. An ancestor database covers nested projects, while per-project locks and persistent cooldown stamps suppress duplicate or repeatedly failing background initializers. Suppressions are recorded in `~/.omo/codegraph/session-start.jsonl` as actions including `skipped-cooldown`, `skipped-locked`, and `skipped-nested-root`.
 
 An ambient `CODEGRAPH_NO_DAEMON=1` forces daemon-off even when `codegraph.daemon` is `true`. Inspect or stop running daemons with the upstream `codegraph daemon` command, an interactive picker that lists running daemons and stops the one you select.
 

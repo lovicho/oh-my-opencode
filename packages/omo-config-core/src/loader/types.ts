@@ -1,7 +1,7 @@
 import { existsSync, lstatSync, readFileSync } from "node:fs"
-import type { OmoConfig } from "../schema"
+import type { OmoConfig, OmoHarnessId } from "../schema"
 
-export type OmoConfigDiagnosticKind = "parse" | "read" | "validation"
+export type OmoConfigDiagnosticKind = "parse" | "profile" | "read" | "validation"
 
 export type OmoConfigDiagnostic = {
   readonly kind: OmoConfigDiagnosticKind
@@ -21,10 +21,8 @@ export type OmoConfigSource = {
 
 export type OmoConfigEnv = {
   readonly [key: string]: string | undefined
-  readonly APPDATA?: string
   readonly HOME?: string
   readonly USERPROFILE?: string
-  readonly XDG_CONFIG_HOME?: string
 }
 
 export type OmoConfigReadFileSystem = {
@@ -33,16 +31,25 @@ export type OmoConfigReadFileSystem = {
   readonly readFileSync: (path: string, encoding: "utf-8") => string
 }
 
+export type OmoConfigRawLayer = {
+  readonly config: Readonly<Record<string, unknown>>
+  readonly source: OmoConfigSource
+}
+
 export type LoadOmoConfigOptions = {
   readonly cwd?: string
   readonly env?: OmoConfigEnv
   readonly fileSystem?: OmoConfigReadFileSystem
+  readonly harness?: OmoHarnessId
   readonly platform?: NodeJS.Platform
+  readonly profile?: string
 }
 
 export type LoadOmoConfigResult = {
   readonly config: OmoConfig
   readonly diagnostics: readonly OmoConfigDiagnostic[]
+  readonly layers: readonly OmoConfigRawLayer[]
+  readonly profile?: string
   readonly sources: readonly OmoConfigSource[]
 }
 
