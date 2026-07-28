@@ -28,9 +28,14 @@ export type LoadedMigrationSource = MigrationSourceDescriptor & {
   readonly value: unknown
 }
 
+export type MigrationTransformResult = {
+  readonly diagnostics: readonly string[]
+  readonly document: Readonly<Record<string, unknown>>
+}
+
 export type MigrationTransform = (
   sources: readonly LoadedMigrationSource[],
-) => Readonly<Record<string, unknown>>
+) => Readonly<Record<string, unknown>> | MigrationTransformResult
 
 export type MigrationTargetWriter = (input: {
   readonly edits: readonly OmoConfigEdit[]
@@ -45,6 +50,13 @@ export type MigrationBoundary =
   | "target-recorded"
   | "source-moved"
   | "source-recorded"
+
+export type MigrationPlan = {
+  readonly id: string
+  readonly sources: readonly MigrationSourceDescriptor[]
+  readonly targetPath: string
+  readonly transform: MigrationTransform
+}
 
 export type RunMigrationOptions = {
   readonly clock?: MigrationClock
@@ -61,10 +73,32 @@ export type RunMigrationOptions = {
   readonly writeTarget?: MigrationTargetWriter
 }
 
+export type MigrationPreview = {
+  readonly backupMoves: readonly { readonly from: string; readonly to: string }[]
+  readonly targetPath: string
+  readonly transform: Readonly<Record<string, unknown>>
+}
+
 export type MigrationRunResult = {
   readonly diagnostics: readonly string[]
   readonly journalResumed: boolean
-  readonly status: "locked" | "migrated" | "skipped"
+  readonly preview?: MigrationPreview
+  readonly status: "locked" | "migrated" | "planned" | "skipped"
+}
+
+export type RunMigrationsOptions = Omit<
+  RunMigrationOptions,
+  "id" | "sources" | "targetPath" | "transform"
+> & {
+  readonly afterMigrations?: (results: readonly MigrationRunResult[]) => void
+  readonly discover: () => readonly MigrationPlan[]
+  readonly dryRun?: boolean
+}
+
+export type MigrationBatchRunResult = {
+  readonly journalResumed: boolean
+  readonly results: readonly MigrationRunResult[]
+  readonly status: "completed" | "locked"
 }
 
 export class MigrationValidationError extends Error {
