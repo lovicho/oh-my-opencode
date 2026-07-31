@@ -59,8 +59,8 @@ describe("TaskManager runtime fallback visibility", () => {
   test("#given a builtin category child on a chain rung #when Senpi applies a fallback to the next rung #then the record advances and the remaining chain shrinks", async () => {
     // given
     const models = [
-      { provider: "quotio-openai", id: "gpt-5.4-mini-fast" },
-      { provider: "openai", id: "gpt-5.4-mini" },
+      { provider: "quotio-openai", id: "gpt-5.6-luna-fast" },
+      { provider: "opencode-go", id: "minimax-m3" },
     ] as const
     const registry = {
       getAvailable: () => models,
@@ -97,13 +97,13 @@ describe("TaskManager runtime fallback visibility", () => {
 
     // then: the remaining chain rung after the selected one is on the record before any retry
     expect(store.load(started.task_id)).toMatchObject({
-      model: "quotio-openai/gpt-5.4-mini-fast",
+      model: "quotio-openai/gpt-5.6-luna-fast",
       fallback_models: [
         {
           source: "category",
-          provider: "openai",
-          model_id: "gpt-5.4-mini",
-          variant: "minimal",
+          provider: "opencode-go",
+          model_id: "minimax-m3",
+          variant: "max",
         },
       ],
     })
@@ -111,9 +111,9 @@ describe("TaskManager runtime fallback visibility", () => {
     // when
     const fallbackEvent = {
       type: "retry_fallback_applied",
-      from: "quotio-openai/gpt-5.4-mini-fast",
-      to: "openai/gpt-5.4-mini:minimal",
-      chainKey: "quotio-openai/gpt-5.4-mini-fast",
+      from: "quotio-openai/gpt-5.6-luna-fast",
+      to: "opencode-go/minimax-m3:max",
+      chainKey: "quotio-openai/gpt-5.6-luna-fast",
       reason: "hard-error",
     }
     fake.emit(fallbackEvent)
@@ -121,18 +121,18 @@ describe("TaskManager runtime fallback visibility", () => {
     // then
     const record = store.load(started.task_id)
     expect(record).toMatchObject({
-      model: "openai/gpt-5.4-mini",
+      model: "opencode-go/minimax-m3",
       resolved_model: {
         source: "category",
-        provider: "openai",
-        model_id: "gpt-5.4-mini",
-        reasoning_effort: "minimal",
+        provider: "opencode-go",
+        model_id: "minimax-m3",
+        reasoning_effort: "max",
       },
     })
     expect(record?.fallback_models).toEqual([])
     expect(
       record?.fallback_attempts?.map((attempt) => `${attempt.provider}/${attempt.model_id}`),
-    ).toEqual(["quotio-openai/gpt-5.4-mini-fast", "openai/gpt-5.4-mini"])
+    ).toEqual(["quotio-openai/gpt-5.6-luna-fast", "opencode-go/minimax-m3"])
     fake.settle({ status: "completed", finalResponse: "done" })
     await manager.waitFor(started.task_id)
   })
