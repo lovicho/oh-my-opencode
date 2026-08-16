@@ -60,7 +60,8 @@ export const CURATED_AGENTS = Object.freeze([...CURATED_READONLY_AGENT_NAMES])
 export const BUILTIN_CATEGORY_NAMES = Object.freeze(BUILTIN_CATEGORY_DEFAULTS.map(({ name }) => name))
 export const BUILTIN_SKILL_NAMES = Object.freeze([
   "ast-grep", "coding-agent-sessions", "data-scientist", "debugging", "frontend", "git-master",
-  "give-me-tips", "hyperplan", "init-deep", "lsp-setup", "onboarding", "programming", "refactor", "remove-ai-slops",
+  "give-me-tips", "hyperplan", "init-deep", "lsp-setup", "mass-ulw", "onboarding", "programming", "refactor",
+  "remove-ai-slops",
   "review-work", "start-work", "ultimate-browsing", "ultrawork", "ulw-loop", "ulw-plan", "ulw-research",
   "visual-qa",
 ] as const)
@@ -131,6 +132,24 @@ export const OMO_NATIVE_EVENT_SCHEMAS = Object.freeze({
   feature_used: Object.freeze({
     "$session_id": STRING_PROPERTY,
     feature: enumProperty(["goal_tool", "team_create", "memory_tool"] as const),
+  }),
+  parallelism_summary: Object.freeze({
+    "$session_id": STRING_PROPERTY,
+    clock_anomalies: NUMBER_PROPERTY,
+    dropped_calls: NUMBER_PROPERTY,
+    eval_only_duration_ms: NUMBER_PROPERTY,
+    eval_only_waves: NUMBER_PROPERTY,
+    incomplete_calls: NUMBER_PROPERTY,
+    measured_turn_duration_ms_total: NUMBER_PROPERTY,
+    mixed_waves: NUMBER_PROPERTY,
+    modeled_wallclock_saved_ms: NUMBER_PROPERTY,
+    non_eval_joined_calls: NUMBER_PROPERTY,
+    non_eval_saved_round_trips: NUMBER_PROPERTY,
+    non_eval_wave_size_histogram: STRING_PROPERTY,
+    non_eval_waves_multi: NUMBER_PROPERTY,
+    non_eval_waves_total: NUMBER_PROPERTY,
+    schema_kind: enumProperty(["parallelism_v1"] as const),
+    upper_bound_saved_ms: NUMBER_PROPERTY,
   }),
 } as const)
 
