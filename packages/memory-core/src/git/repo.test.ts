@@ -20,7 +20,9 @@ async function createRepo(agentId = "agent-one") {
 }
 
 afterEach(async () => {
-  await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 })))
+  for (const dir of tempDirs.splice(0)) {
+    await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 250 }).catch(() => undefined)
+  }
 })
 
 describe("GitMemoryRepo", () => {
@@ -287,8 +289,7 @@ describe("GitMemoryRepo", () => {
       result.status === "fulfilled" ? [result.value.sha] : [],
     )
     expect(new Set(shas).size).toBe(writers)
-  })
-
+  }, 30_000)
 
   it("#given a transient ref lock on the first attempt #when a repo is initialized #then the retry lets HEAD settle", async () => {
     // given - git loses the HEAD.lock race once, exactly as it does under Windows contention

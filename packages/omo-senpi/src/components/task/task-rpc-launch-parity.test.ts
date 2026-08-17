@@ -1,29 +1,53 @@
 import { mkdtempSync, rmSync } from "node:fs"
+import { createRequire } from "node:module"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { afterEach, describe, expect, test } from "bun:test"
 
 import type { RpcRunnerSpec } from "@oh-my-opencode/senpi-task"
 import { createRpcModelAdmission } from "@oh-my-opencode/senpi-task/rpc-model-admission"
-import { buildRpcModelCatalogSpawn } from "@oh-my-opencode/senpi-task/rpc-spawn"
+import { buildRpcModelCatalogSpawn, type RpcSpawnDescriptor } from "@oh-my-opencode/senpi-task/rpc-spawn"
 
 const agentDirs: string[] = []
 const mockProviderExtension = fileURLToPath(
   new URL("../../../scripts/qa/mock-provider/index.ts", import.meta.url),
 )
+const rootSuiteBaselineEnv: NodeJS.ProcessEnv = { ...process.env }
+const senpiPackageDir = dirname(createRequire(import.meta.url).resolve("@code-yeongyu/senpi/package.json"))
+const senpiRpcEntry = join(senpiPackageDir, "dist", "rpc-entry.js")
+
+function buildPinnedCatalogSpawn(spec: RpcRunnerSpec, parentEnv: NodeJS.ProcessEnv): RpcSpawnDescriptor {
+  return buildRpcModelCatalogSpawn(spec, {
+    parentEnv,
+    resolveSenpiExecutable: () => null,
+    resolveRpcEntry: () => senpiRpcEntry,
+  })
+}
 
 function createAdmission() {
   const agentDir = mkdtempSync(join(tmpdir(), "omo-task-rpc-model-profile-"))
   agentDirs.push(agentDir)
   const parentEnv = {
-    ...process.env,
+    PATH: rootSuiteBaselineEnv.PATH,
+    TMPDIR: rootSuiteBaselineEnv.TMPDIR,
+    TEMP: rootSuiteBaselineEnv.TEMP,
+    TMP: rootSuiteBaselineEnv.TMP,
+    HOME: agentDir,
+    USERPROFILE: agentDir,
+    CI: rootSuiteBaselineEnv.CI,
+    TERM: "dumb",
+    OMO_DISABLE_POSTHOG: "true",
     OMO_CODING_AGENT_DIR: agentDir,
     SENPI_CODING_AGENT_DIR: agentDir,
     PI_CODING_AGENT_DIR: agentDir,
+    XDG_DATA_HOME: join(agentDir, "xdg-data"),
+    XDG_CACHE_HOME: join(agentDir, "xdg-cache"),
+    XDG_CONFIG_HOME: join(agentDir, "xdg-config"),
+    XDG_STATE_HOME: join(agentDir, "xdg-state"),
   }
   return createRpcModelAdmission({
-    buildSpawn: (spec) => buildRpcModelCatalogSpawn(spec, { parentEnv }),
+    buildSpawn: (spec) => buildPinnedCatalogSpawn(spec, parentEnv),
   })
 }
 
@@ -45,6 +69,21 @@ afterEach(() => {
 })
 
 describe("task RPC launch profile parity", () => {
+  test("#given ambient PATH resolves a foreign senpi #when the catalog spawn is built #then it pins the package-local CLI", () => {
+    // given
+    const spec = makeSpec([mockProviderExtension])
+
+    // when
+    const descriptor = buildPinnedCatalogSpawn(spec, {
+      ...rootSuiteBaselineEnv,
+      PATH: join(tmpdir(), "foreign-senpi-bin"),
+    })
+
+    // then
+    expect(descriptor.command).toBe(process.execPath)
+    expect(descriptor.args[0]).toBe(join(senpiPackageDir, "dist", "cli.js"))
+  })
+
   test("#given an explicit provider extension #when process model admission runs #then its model is visible without credentials", async () => {
     // given
     const admit = createAdmission()
@@ -53,7 +92,7 @@ describe("task RPC launch profile parity", () => {
     const admission = admit(makeSpec([mockProviderExtension]))
 
     // then
-    await expect(admission).resolves.toBeUndefined()
+    expect(await admission).toBeUndefined()
   }, 30_000)
 
   test("#given a model known only through parent resources #when its provider extension is not forwarded #then admission rejects before launch", async () => {
