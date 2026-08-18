@@ -84,10 +84,19 @@ describe("root test CI partition", () => {
     const job = rootTestJob()
     const runBlock = job.slice(job.indexOf("      - name: Run tests"))
 
-    expect(runBlock).toContain('if: runner.os != \'Windows\'')
-    expect(runBlock).toContain("if: matrix.shard == '1/2'")
-    expect(runBlock).toContain("if: matrix.shard == '2/2'")
+    expect(runBlock).toContain("if: needs.ci-mode.outputs.run_heavy == 'true' && runner.os != 'Windows'")
+    expect(runBlock).toContain("if: needs.ci-mode.outputs.run_heavy == 'true' && matrix.shard == '1/2'")
+    expect(runBlock).toContain("if: needs.ci-mode.outputs.run_heavy == 'true' && matrix.shard == '2/2'")
     expect(runBlock).not.toContain("shell: bash\n        run: |")
     expect(job).toContain("timeout-minutes: ${{ matrix.os == 'windows-latest' && 60 || 30 }}")
+  })
+
+  test("#given Windows cache restore costs more than install #when the root matrix runs #then only non-Windows jobs restore Bun cache", () => {
+    const job = rootTestJob()
+    const cacheStart = job.indexOf("      - uses: actions/cache@v5")
+    const cacheEnd = job.indexOf("      - name: Install dependencies", cacheStart)
+    const cacheStep = job.slice(cacheStart, cacheEnd)
+
+    expect(cacheStep).toContain("if: runner.os != 'Windows' && needs.ci-mode.outputs.run_heavy == 'true'")
   })
 })
