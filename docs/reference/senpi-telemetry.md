@@ -54,7 +54,7 @@ The payloads carry only booleans, buckets, counters, and allowlisted enum values
 | `turn_completed` | `total_tokens` | `number` | - |
 | `turn_completed` | `turn_index` | `number` | - |
 | `skill_loaded` | `$session_id` | `string` | - |
-| `skill_loaded` | `skill_name` | `string` | `ast-grep`, `coding-agent-sessions`, `dag-library`, `data-scientist`, `debugging`, `frontend`, `git-master`, `give-me-tips`, `hyperplan`, `init-deep`, `lsp-setup`, `mass-ulw`, `onboarding`, `programming`, `refactor`, `remove-ai-slops`, `review-work`, `start-work`, `ultimate-browsing`, `ultrawork`, `ulw-loop`, `ulw-plan`, `ulw-research`, `visual-qa` |
+| `skill_loaded` | `skill_name` | `string` | `ast-grep`, `coding-agent-sessions`, `dag-library`, `data-scientist`, `debugging`, `frontend`, `git-master`, `give-me-tips`, `hyperplan`, `init-deep`, `lsp-setup`, `mass-ulw`, `onboarding`, `programming`, `refactor`, `remove-ai-slops`, `review-work`, `ulw-execute`, `ultimate-browsing`, `ultrawork`, `ulw-loop`, `ulw-plan`, `ulw-research`, `visual-qa` |
 | `delegation_started` | `$session_id` | `string` | - |
 | `delegation_started` | `background` | `boolean` | - |
 | `delegation_started` | `batch_size_bucket` | `string` | `1`, `2_4`, `5_plus` |
@@ -205,6 +205,15 @@ Identity is machine-level, not person-level:
 - GeoIP enrichment is enabled as of schema version 2: native events are sent without the `$geoip_disable` transport flag, so PostHog may derive an approximate country (`$geoip_country_code`) from the sending IP server side. The application never authors `$ip` or any location property itself, and stores no IP locally. Earlier schema versions disabled GeoIP; a prior revision of this document wrongly claimed it was already on.
 
 Because identity is machine-level, a shared machine conflates its users into one id. That's an accepted, documented limitation, not a bug.
+
+### Surface attribution and install ids (schema version 3)
+
+Every event carries two shared attribution properties as of schema version 3:
+
+- `surface` is `cli` for standalone CLI sessions, or `desktop` when the runtime is embedded in OmO Desktop. The Desktop host sets `OMO_NATIVE_SURFACE=desktop` in the child environment; anything else is the CLI. A Desktop-driven turn is Desktop usage, not CLI adoption, and must never be counted as one.
+- `install_id` is a random 64-hex value stored (like the session-id salt) under the agent home at `omo-senpi/omo-native/install-id`, created with mode 0600 on first use. It is generated locally and derived from nothing: not the hostname, not hardware, not accounts. The standalone CLI and the Desktop-bundled runtime on one machine converge on the same file, which is what joins the two surfaces without fingerprinting the machine. A valid `OMO_NATIVE_INSTALL_ID` env value overrides the file, so a Desktop host can pin a remote (SSH/WSL) runtime to the local installation's id; a malformed override is ignored.
+
+Rows written before schema version 3 carry neither property. Segment on `schema_version` when mixing eras.
 
 ## SDK-added properties
 

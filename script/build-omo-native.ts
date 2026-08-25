@@ -36,7 +36,7 @@ const REQUIRED_PLUGIN_ARTIFACTS = [
   join("skills", "refactor", "SKILL.md"),
   join("skills", "remove-ai-slops", "SKILL.md"),
   join("skills", "review-work", "SKILL.md"),
-  join("skills", "start-work", "SKILL.md"),
+  join("skills", "ulw-execute", "SKILL.md"),
   join("skills", "ultimate-browsing", "SKILL.md"),
   join("skills", "ultrawork", "SKILL.md"),
   join("skills", "ulw-loop", "SKILL.md"),
@@ -154,7 +154,9 @@ function main(argv: readonly string[]): number {
     )
     return 1
   }
-  if (!options.checkOnly) {
+  // Only the default package plugin dir is git-ignored; staging builds (--output)
+  // must leave packages/omo-native untouched.
+  if (!options.checkOnly && options.outputDir === defaultOutputDir) {
     writeFileSync(join(packageDir, ".gitignore"), "/plugin/\n", "utf8")
   }
   console.log(
