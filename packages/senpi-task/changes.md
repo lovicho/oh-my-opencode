@@ -1,4 +1,13 @@
 
+## 2026-09-10 — Retire myth agent names from test fixtures and update package documentation
+
+The builtin curated agents `metis` and `momus` are renamed to `plan-consultant` and `plan-reviewer` in
+the codebase; the alias handles legacy task records. All non-alias test fixtures in `packages/senpi-task/src/`
+are updated to use the canonical names, and the team member name `atlas` in control-tool tests becomes `builder`.
+`packages/senpi-task/AGENTS.md` and `packages/senpi-task/AGENTS.md` are updated to reflect the new curated agent
+identities. Legacy ids (`metis` and `momus`) are only used in tests that explicitly exercise the alias table
+(todos 1, 3, 5) or in persisted task records demonstrating backward compatibility.
+
 ## 2026-09-10 — Keep the user question tools out of child sessions
 
 RPC children now receive `--no-ask-user` immediately after `--no-extensions` so the detached process cannot register `request_user_input` / `ask_user_question`. Headless auto-answer treats `method: "question"` as cancelled (structural request type until the pinned senpi unions include it). Catalog argv is unchanged.
@@ -49,7 +58,6 @@ the old wording still pulling one of three single-dependent delegations back to 
 ## 2026-09-04 — Defer the lead tasklist tools to tool_search
 
 The four lead tasklist tools (`task_create`, `task_get`, `task_list`, `task_update`) register with `exposure: "search"` (plus `searchText`/`searchKeywords`/`searchGroup: "team-tasklist"`/`allowLazyActivation`) instead of the resident tool list. They only matter once a team exists, so they cost no prompt tokens until a tasklist operation is searched for and promote through `tool_search` on demand. Descriptions now lead with the selecting situation. `src/tools/team/tasklist-exposure.test.ts` pins the exposure on all four.
-
 
 ## 2026-08-28 — Align the task engine with Senpi 2026.8.28
 
