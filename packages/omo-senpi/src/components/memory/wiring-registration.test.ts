@@ -4,6 +4,8 @@ import { realpathSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
+import { rmEfaultTolerant } from "./teardown.test-support"
+
 import { buildIdentityPaths, GitMemoryRepo } from "@oh-my-opencode/memory-core"
 import type { ChildSpec, RunnerOutcome, SenpiModelPort } from "@oh-my-opencode/senpi-task"
 
@@ -29,7 +31,11 @@ const registry = {
 }
 
 const roots: string[] = []
-afterEach(async () => { for (const root of roots.splice(0)) await Bun.$`rm -rf ${root}` })
+afterEach(async () => {
+  for (const root of roots.splice(0)) {
+    await rmEfaultTolerant(root)
+  }
+})
 
 interface Fixture {
   readonly pi: MemoryFakeExtensionAPI
