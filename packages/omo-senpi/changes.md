@@ -1,3 +1,59 @@
+## 2026-09-17 - Defer plugin startup work past the first paint
+
+### What changed
+
+- `src/extension/startup-deferral.ts` (new): `createLazyValue` (construct on first use, with a
+  `constructed` flag a test can assert on) and `createStartupDeferral` (queue work, retire it on
+  session_shutdown), plus `createFirstPaintScheduler` and the `deferUntilAfterFirstPaint` call-site
+  helper.
+- `src/extension/compose.ts` / `types.ts`: compose builds one deferral per activation, hands it to
+  every component as `ComponentContext.deferStartupWork`, and retires it on `session_shutdown`
+  beside the idle coordinator.
+- `src/components/lsp/index.ts`: the mutation formatter is a lazy accessor built on the first
+  `tool_result`; the project-config notice moved onto the deferral. Tools, flags and all four hooks
+  still register eagerly.
+- `src/components/init-deep-advisor/component.ts`, `src/components/telemetry/omo-native-session.ts`:
+  the `session_start` bodies moved onto the deferral; the telemetry one refuses to build a client
+  once `session_shutdown` has landed.
+- `src/components/telemetry/index.ts`: the legacy product config resolves the package version on
+  first capture instead of at module scope.
+
+### Why
+
+- `session_start` is dispatched from inside the engine's `interactiveMode.init`, so everything a
+  handler does synchronously is billed to the phase before the first paint. A plain
+  `setTimeout(…, 0)` does NOT escape it — that phase awaits I/O, so the macrotask fires before init
+  returns (measured: 0 ms saved, where a scheduler that never fired saved 34 ms). The gate opens on
+  the first post-paint host edge or a 750 ms backstop instead.
+
+### Why an extension could not handle it
+
+- This IS the extension; the work is the plugin's own registration and session-binding path.
+
+### Expected merge conflict zones
+
+- LOW: `compose.ts`'s activation sequence (upstream edits the same block when adding seams) and the
+  `ComponentContext` shape in `types.ts`.
+
+## 2026-09-17 — ulw-execute continuation repairs a work its session abandoned
+
+`findContinuableBoulderWork` reads `.omo/boulder.json` on every user input and on
+`agent_settled`, and it used to accept whatever status it found there. A work whose
+session ended abnormally kept `status: "active"` forever, because `completeBoulder`
+is the only transition away from it and it runs only on an explicit completion
+(#8413). The read now starts with `reconcileStaleWorks`, which demotes such a work
+to `paused` and stamps `stale_since` once its last activity - the newest of its
+sessions' transcript mtimes, `updated_at` and `started_at` - is six hours old
+(`OMO_BOULDER_STALE_WORK_THRESHOLD_MS`). A healthy work is never rewritten, and the
+continuation itself is unchanged: `active` and `paused` were both continuable
+before this change and still are.
+
+The transcripts are found through this package's own agent-home resolver, which
+gained `resolveAgentSessionsDirectory(options)` beside `resolveAgentHome` and is now
+reachable as the `@oh-my-opencode/omo-senpi/agent-home` subpath, so the OpenCode
+ulw-execute hook resolves the same directory rather than re-deriving it.
+`boulder-state` takes the directory as an option and resolves no home path itself.
+
 ## 2026-09-16 — Kibitzer nudges are reference-only
 
 A recalled note used to arrive with no stated posture, and 54% of the hints
