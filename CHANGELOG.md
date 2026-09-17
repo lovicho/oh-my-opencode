@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Engine: senpi 2026.9.17-2
+### Engine: senpi 2026.9.17-3
+
+**The published engine ships its tree-sitter assets again.** senpi's publish staging copied a bundled workspace's `dist` but not its `assets`, so the tarball carried compile-time `type: "file"` imports pointing outside the package. Any consumer bundling it with `bun build --compile` — omo's own release binaries included — failed to resolve them. (senpi [#1800](https://github.com/code-yeongyu/senpi/issues/1800))
 
 **Cold startup reaches ready in under a second; warm in under 900 ms.** Three rounds of profiling cut cold time-to-ready from 5.8 s to 850 ms and warm from 1.5 s to 886 ms on a loaded host. The banner-to-spinner wait (the gap where nothing is on screen) fell from 4.6 s to 175 ms cold and from 550 ms to 177 ms warm. The last round found that MCP server attach consumed 255 ms of a 292 ms serial `session_start` dispatch on a real config (0.2 ms with no servers configured); it now starts past the first frame and the first turn still carries the full tool set. The auto-theme detection no longer repaints on every launch: the detected background is persisted and seeds the next start. The app-server MCP inventory stays current after deferred attach through a wire-status subscription. Managed-tool detection uses PATH stats instead of process spawns. The model runtime and resource loader run concurrently instead of in sequence. Measured same-commit for the final round: time-to-ready 1,014 to 797 ms (n=10 interleaved). The cross-version headline compares installed beta.68 against current dev, not only this work. ([#8412](https://github.com/code-yeongyu/oh-my-openagent/issues/8412), senpi [#1781](https://github.com/code-yeongyu/senpi/issues/1781))
 
@@ -45,6 +47,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### OmO
 
 **A bun-global `omo` no longer boots node before it runs.** `bun add -g` links the launcher into two bins - `<bun root>/bin/omo` and `<bun root>/install/global/node_modules/.bin/omo` - and a PATH that lists the global `node_modules/.bin` first reached the second one, which is bun's own `#!/usr/bin/env node` symlink: every launch there paid a full node boot before the launcher re-execed itself under bun. The launcher already replaced the first bin with a tiny sh shim that execs bun directly; it now repairs both, judging each entry independently under the same safety rules (only bun's own link to this install, or a shim this launcher wrote, is ever replaced; a foreign file or link is left alone, one entry's failure never blocks the other, and the whole repair stays fail-open and silent unless `OMO_DEBUG`). Measured with hyperfine (15 runs, temp bun-root fixture, Apple Silicon): the `.bin/omo` path drops from 50.6 ms mean / 46.6 ms min to 16.8 ms / 16.4 ms, level with the already-shimmed bin at 17.7 ms. The launcher also prefers the engine's pre-linked bundle (`<senpi>/dist/bundle/cli.js`) when the installed engine ships one and falls back to `dist/cli.js` otherwise, so the engine-side bundle lands without another launcher change. ([#8412](https://github.com/code-yeongyu/oh-my-openagent/issues/8412), [senpi#1781](https://github.com/code-yeongyu/senpi/issues/1781))
+
+### Changed
+
+- **deps:** adopt senpi 2026.9.17-3 with the restored engine tree-sitter assets ([#8428](https://github.com/code-yeongyu/oh-my-openagent/pull/8428))
 
 ## [5.0.0-beta.68] - 2026-09-16
 
