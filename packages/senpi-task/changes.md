@@ -1,3 +1,20 @@
+## The launch profile no longer depends on how the spec's path is spelled
+
+The compiled entry reaches `daemon-launch-spec.json` through the install prefix; the in-process
+runner reaches the same file through the bundle's real location. On macOS `/tmp` is a symlink, so
+the two spellings hashed to two profile ids, the parent's ensure judged the healthy daemon foreign
+and handed the socket over to itself - dropping every live child session. The spec directory is
+now canonicalized before extension paths are resolved into the profile.
+
+## The daemon runner creates the child session directory before opening
+
+The first live run of daemon-hosted children failed every `open_session` with `ENOENT ... lstat
+<stateDir>/sessions/<taskId>`: the host checks the JSONL's directory before it opens the session,
+and on the daemon path nobody had created it (a child process used to do that for itself).
+`RpcHostRunner.openChild` now creates the directory for a fresh child. The fake host gained an
+`enforceSessionDir` option that mirrors the host's check, so the regression test fails for the
+right reason.
+
 ## 2026-09-17 — The shared daemon is where a process child runs by default
 
 `task.default_execution_mode` ships as `auto`. A parent session answers it ONCE, at the first spawn
