@@ -7,7 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+**`deep` is now two lanes, and the cheaper one is the default.** The old category announced itself as MANDATORY for backend, logic, algorithms, browser use and multimodal work. Almost every coding task matches that list, so almost every delegated task ran on `gpt-6-astra` at high reasoning, and the `gpt-5.6-sol` rung beneath it was reached only when no Astra was connected. The lane you get is now decided by capability instead of by domain. `deep-low` (`gpt-5.6-sol` medium) is the default and takes any goal whose decisions the child can settle from what it reads. `deep-high` (`gpt-6-astra` high) takes a goal whose central decision cannot be settled that way: a trade-off with no single right answer, a contract change crossing a package or process boundary, a mechanism with no pattern in the repo to copy, or correctness that has to be argued from invariants. Breadth alone does not qualify; wide but mechanical work stays in `deep-low`. The domain list moved to the caller-facing `deep-low` description, where the routing choice is actually made, and left the child prompts, which never chose a category. A `deep-low` child that runs into one of those decisions stops before editing and returns `ESCALATE: deep-high` with what it read and the options it saw, and the caller re-spawns the same brief on the escalation lane. Each lane is one rung gated on its own model, so a machine missing Astra loses `deep-high` instead of quietly getting Sol under that name. ([#8516](https://github.com/code-yeongyu/oh-my-openagent/issues/8516))
+
+**The writing category runs at low reasoning and keeps a Claude fallback.** The builtin `writing` chain led with `claude-fable-5-1` at medium and fell back to `kimi-k3` at max, so prose delegation paid a reasoning budget it does not need, and a Fable outage moved every writing task onto a max-variant Kimi run with no Claude rung left. The chain is three rungs at low now: `claude-fable-5-1`, then `kimi-k3`, then `claude-opus-4-6`. ([#8525](https://github.com/code-yeongyu/oh-my-openagent/issues/8525))
+
+### Deprecated
+
+**The `deep` category name, with nothing for you to do.** If your `omo.json` configures `categories.deep`, the first launch renames it to `categories.deep-low`, along with `deep` used as a team member's category or as the memory reflection category, in the base block, in `[senpi]`/`[opencode]`/`[codex]`, and inside every profile. A config that never mentioned `deep` is not touched at all: no rewrite, no backup file, no migration marker. A file the rewrite cannot reach, because the run is locked or the file is read-only, still works, because the name is canonicalized when the config is read and a startup notice names the key to rename. `task(category: "deep")` from a skill or an AGENTS.md still runs, on `deep-low`. ([#8516](https://github.com/code-yeongyu/oh-my-openagent/issues/8516))
+
 ### Fixed
+
+- The memory pressure advisory counts the text your model is actually shown again. A recent change estimated from the sizes git stored, which reads low for any `system/` file holding invalid UTF-8 and reported no pressure at all when the repository could not be read; both are restored, and the estimate is still computed once per commit rather than once per prompt.
+
+- `omo doctor` sees your running sessions again. It recognised engines by one spelling of their command line, and the launcher stopped producing that spelling when it moved onto the engine's pre-linked bundle, so the stale-session report and its reap command had been looking at an empty list on current installs.
+
+- The reminder that your soul files changed no longer re-reads the whole memory history to find out. It asked git for every commit since the last notice that touched `system/`, which on an identity with thousands of commits costs most of a second on every prompt; it now reads a page and only looks further when that page is entirely memory-tool writes. The notice it produces is the same one.
+
+- Every prompt in a directory with a memory identity re-read the same files from git. The memory pressure advisory listed the repository tree and read each `system/*.md` blob again on every turn, and the save reminder asked git for the entire commit history and searched it here. Both answers only change when the memory repository gains a commit, so both are now derived once per commit: five fewer git processes per prompt, and a megabyte of commit history that no longer crosses the process boundary on a repository with three thousand commits. What the model receives is unchanged.
+
+**A detached task session no longer crashes the host during heartbeat or shutdown.** State polling
+now catches synchronous connection errors, and shutdown stops polling before dropping the
+connection. A failed abort is logged without preventing the child from closing.
+Child-process heartbeat calls have the same protection, and disposal observes and logs a failed
+detach instead of leaving an unhandled rejection.
+Thanks to @ayden94 for the heartbeat fix.
+([#8494](https://github.com/code-yeongyu/oh-my-openagent/issues/8494))
+
+**The architect nudge follows the refusal now, not one model id.** When a model refuses a turn and the session falls back, omo injects a hidden directive telling the agent to route the hard parts to `task(category: "architect")`. It armed only when the refusing model was `claude-fable-5`, so a session on `claude-fable-5-1`, which is the model the architect category itself runs, never saw it. Any refusal-driven fallback arms it now, and the directive no longer calls the consultant the model that just refused unless it is. ([#8513](https://github.com/code-yeongyu/oh-my-openagent/issues/8513))
 
 **Writing memory no longer steals focus on Windows.** Every `memory` tool write auto-commits, and each git command behind it spawned `git.exe` with no `windowsHide`, so Windows built a fresh console window and brought it to the front. The lock protocol's start-time probe did the same with `powershell.exe`, and on a Node runtime it did it on every probe. That probe falls back from an in-process kernel32 reader reached through `bun:ffi`, which Node cannot import, so the visible fallback was the normal path there. Both spawns are hidden now, along with the formatter, the worktree-root lookups and the init-deep git probes that flashed the same way. The interactive launcher keeps its console on purpose and says so at the call site. ([#8501](https://github.com/code-yeongyu/oh-my-openagent/issues/8501))
 
