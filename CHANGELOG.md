@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.0-beta.84] - 2026-09-22
+
+### Changed
+
+**Claude Opus 5.5 is the Opus every default reaches for now, and it runs at `max`.** ([#8684](https://github.com/code-yeongyu/oh-my-openagent/issues/8684))
+
+Every rung that named `claude-opus-5` now names `claude-opus-5-5`: the `visual-engineering`, `artistry`, `unspecified-high` and `writing` category chains, the Sisyphus, Oracle, Metis and Momus agent chains, the senpi-task category and builtin-agent tables, `unspecified-high`'s builtin config, and the Capable model profile. The rungs that ran at `xhigh` run at `max`, because that is the level Opus 5.5 is recommended at. Claude Opus 5 stays selectable and keeps its own prompt variant; it is no longer what you get without asking.
+
+**The `writing` category chain is Fable 5.1, then Opus 5.5, then Opus 4.6.** ([#8684](https://github.com/code-yeongyu/oh-my-openagent/issues/8684))
+
+`writing` ran Fable 5.1 at `low`, then Kimi K3 at `low`, then Opus 4.6 at `low`. It now runs Fable 5.1 at `low`, then Claude Opus 5.5 at `low`, then Claude Opus 4.6 at `max`, so prose work stays inside the Claude family end to end. The chain was declared in two places that had drifted apart - `model-core` and `senpi-task` disagreed on both the rungs and their levels - and both now read the same three rungs.
+
+**A Claude Opus 5.5 session no longer introduces itself as Opus 5.** ([#8684](https://github.com/code-yeongyu/oh-my-openagent/issues/8684))
+
+Opus 5.5 routes to the Opus 5 orchestrator prompt, which is right - the Opus 5 patterns carry over - but its self-knowledge block hardcoded the name and id of the earlier model, so the running model was told it was something else. The block now names whichever of the two is running. Telemetry gained the new id while keeping the old one, so a session on an older pinned engine is still recorded rather than masked to `custom`.
+
+## [5.0.0-beta.83] - 2026-09-22
+
 ### Added
 
 **`oh-my-openagent install --platform=native` now installs OmO Native for you, so you no longer have to know the package name or the recommended runtime.** `native` is a public platform now, listed in `install --help` and in the interactive picker beside OpenCode, Codex and Both. Choosing it performs the real install - `bun add -g omo-ai@beta` when bun is on PATH, `npm i -g omo-ai@beta` when it is not, with bun named as the recommended runtime - and then points you at `omo setup`. When the global install fails, the exact command to run by hand and the reason it failed are printed instead of a raw error. The in-repo development adapter keeps today's behaviour under `--platform=native-dev`, still gated by an environment flag (`OMO_ENABLE_NATIVE_DEV_PLATFORM`, and the old `OMO_ENABLE_SENPI_PLATFORM` is still accepted). ([#8618](https://github.com/code-yeongyu/oh-my-openagent/issues/8618))
@@ -70,6 +88,10 @@ Kimi HighSpeed led the `quick` chain and no other lane used it. The `quick` chai
 A settled node now carries `output` (the child's final message, up to 2000 characters) and `outputBytes` (its full size, so you can tell a truncated preview from the whole thing, and a node that returned nothing reads as `0` rather than as nothing recorded). A running node carries `lastActivityAt`, the last time its child wrote anything at all, and `snapshot` names any running node that has been silent for more than ten minutes. Silence is reported, never judged - one long tool call looks the same as a stalled child - but a node quiet for fifty minutes is now something you can see instead of something you have to guess.
 
 The end time was already recorded, under the name `completed_at`. A node stuck in `running` because its child finished but was never reaped is a separate defect, tracked in [#8659](https://github.com/code-yeongyu/oh-my-openagent/issues/8659).
+
+**A crashed reclaimer's stale sentinel can no longer wedge DAG lock acquisition on Windows.** ([#8671](https://github.com/code-yeongyu/oh-my-openagent/issues/8671))
+
+Clearing a stale `.reclaim` sentinel renames and unlinks files that the host's antivirus or search indexer can briefly hold open; on win32 that surfaces as EPERM/EBUSY sharing violations that POSIX rename does not have. The quarantining rename threw the refusal raw, and the lock-wait budget — which resets only when the canonical holder changes — charged the reclaim's own I/O until acquisition timed out behind an unchanged dead holder. The rename now retries transient refusals the way the final unlink already did, clearing a stale sentinel republishes the reclaim mutex in place instead of handing a wasted poll back to the waiter, and a pass that cleared a sentinel resets the wait budget: the loop observes the sentinel's disappearance, not the clock. `LOCK_WAIT_TIMEOUT_MS` is unchanged and nothing is skipped on win32.
 
 **A git that dies mid-command no longer hangs isolation work until its helpers exit.** `runGit` settled on the child `close` event, which fires only after every stdio pipe closes — but git's `!` alias shells inherit those pipes. On Windows, killing git alone (`TerminateProcess` has no tree semantics) left those shells holding every handle, so a run whose git had already failed stayed pending until the last survivor exited; in CI that raced the 30-second test budget and intermittently lost, with the survivor's locked working directory surfacing as an `EBUSY` on fixture teardown. A git that exits to a signal death or a disallowed exit code now settles at once: what remains of the tree is killed immediately, and pipes still held a second later are force-closed so the typed `GitCommandError` surfaces with the output kept so far. Normal commands are unaffected — their pipes close in milliseconds anyway. ([#8663](https://github.com/code-yeongyu/oh-my-openagent/issues/8663))
 
