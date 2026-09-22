@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+**The `unspecified-low` category now runs on MiMo V2.6 Pro first, and its Grok rung moves to Grok 4.7.** ([#8652](https://github.com/code-yeongyu/oh-my-openagent/issues/8652))
+
+`unspecified-low` is where delegated work lands when no specialist category fits and the job is contained. The chain led with Grok 4.6 at `xhigh`; it now leads with MiMo V2.6 Pro at `max`, served by Xiaomi or opencode-go, with Grok 4.7 at `xhigh` right behind it. Grok 4.7 is not served by the opencode provider, so that lane left the rung and opencode-go joined it. The rest of the chain — GPT-5.6 Terra, Claude Sonnet 5, Qwen 3.8 Max Preview, DeepSeek V4 Pro — is unchanged, and MiMo V2.5 Pro stays as the last rung.
+
 **Write your harness block as `[native]` in `omo.json`, and delegate to the `omo-native-*` reviewers.** ([#8620](https://github.com/code-yeongyu/oh-my-openagent/issues/8620))
 
 The standalone edition is branded OmO Native, but the block you write in `omo.json` to override settings for it was spelled `[senpi]`, and the reviewer agents you delegate to by name were `omo-senpi-code-reviewer`, `omo-senpi-qa-executor` and `omo-senpi-gate-reviewer`. Both spellings came from the engine's package name.
@@ -38,6 +42,16 @@ Kimi HighSpeed led the `quick` chain and no other lane used it. The `quick` chai
 `explore` and `librarian` now lead with Kimi HighSpeed at variant `off`. The Kimi endpoint rejects an explicit disabled-thinking block, so senpi sends the request with no thinking parameter and the lowest adaptive effort, which is what a grep-and-report agent needs. A machine with no Kimi Code subscription falls through to Luna Fast, the model those two agents ran on before this change.
 
 - **The standalone edition is called OmO Native everywhere.** The installer hint, the package postinstall notice, the installation guide, the README and its four translations, and the `omo-ai` package description called it the "Senpi edition" — a name the product itself never used, having said `OmO Native` in the TUI footer and `Edition: Native` in `omo doctor` all along. They all say OmO Native now, and the hint names what you get: the same omo as one `omo` command, with no OpenCode host required, while the install you already have keeps working. `senpi` still names the engine, in `omo doctor`, in this file's engine headings, and in its own environment variables and paths. A regression test scans those surfaces and fails if the old edition wording comes back. ([#8618](https://github.com/code-yeongyu/oh-my-openagent/issues/8618))
+
+### Fixed
+
+**Migrating a leftover `config.jsonc` writes `[native]`, and a `[native]` block gets the same reasoning cleanup as the old name.** First launch used to copy the retired harness key into the new file, so a later pass had to rename it. The leftover-file transform now emits `[native]`. Reasoning-key unification walks `[native]` as well as the old spelling, because that cleanup runs before the rename pass and a file already written with the documented name was being skipped. ([#8631](https://github.com/code-yeongyu/oh-my-openagent/issues/8631))
+
+**A failed turn in a delegated task is no longer counted as a turn.** When a provider error ends an assistant turn, that turn now lands in a new `failed_turns` stat instead of inflating `turns`, and its usage — typically an all-zero block the provider sends alongside the error — contributes no tokens, no cost and no generation time. A run that never produced a successful turn reports token and cost coverage as `unavailable` and omits the cost field entirely, instead of claiming `turns: 6` for six consecutive failures. A successful turn that genuinely cost $0 keeps reporting a cost of 0, and a failure re-anchors the generation window so the next successful turn's throughput is measured from the failure, not from spawn. The live task row now tells the same story: it reads `starting` until the first successful turn lands — no phantom `turn 0`, no cost token — shows `failed N` with the verb `retrying` while provider attempts keep failing, and returns to `running` only after a real turn. Both the TUI status line and the background task row draw their stats tokens from one shared builder, so the two grammars cannot drift apart again. ([#8627](https://github.com/code-yeongyu/oh-my-openagent/issues/8627))
+
+**The ulw-loop gate reviewer is enforced again on the Codex surface.** ([#8630](https://github.com/code-yeongyu/oh-my-openagent/issues/8630))
+
+Renaming the reviewer agents to `omo-native-*` left the Codex-side ulw-loop guard matching only the retired `omo-senpi-*` spellings. Because the resolver canonicalizes a name before the guard sees it, the guard received a name it did not recognize and treated the spawn as ordinary work: the gate reviewer could start without a manual-QA artifact, and the per-reviewer no-progress cap stopped counting. Both checks apply again, and either spelling is recognized, so nothing that named the old reviewer breaks. The denial message and the spawn counter now name the reviewer that actually ran.
 
 ## [5.0.0-beta.82] - 2026-09-21
 

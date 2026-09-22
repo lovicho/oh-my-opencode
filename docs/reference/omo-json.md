@@ -100,11 +100,11 @@ No default profiles ship. A profile exists only when you write one under `profil
   "task": {},           // task engine settings
   "teams": {},          // record<string, TeamSpec>
   "models": {},         // record<string, ModelCatalogEntry>, shared model catalog
-  "model_profiles": {}, // record<string, ModelProfile>, named model chains picked by intent (Senpi harness)
-  "model_profile": "",  // active profile id or a literal provider/model pin (Senpi harness)
-  "memory": {},         // MemorySettings, Senpi memory subsystem
-  "git_master": { "commit_footer": false }, // opt-in commit footer (Senpi harness); no Co-authored-by trailer is ever emitted
-  "telemetry": { "enabled": true }, // Senpi telemetry, enabled by default
+  "model_profiles": {}, // record<string, ModelProfile>, named model chains picked by intent (Native harness)
+  "model_profile": "",  // active profile id or a literal provider/model pin (Native harness)
+  "memory": {},         // MemorySettings (Native harness)
+  "git_master": { "commit_footer": false }, // opt-in commit footer (Native harness); no Co-authored-by trailer is ever emitted
+  "telemetry": { "enabled": true }, // telemetry (Native harness), enabled by default
   "disabled_skills": [], // skill names hidden on every harness, unioned across layers
   "[opencode]": {},     // OpenCode plugin config, freeform (see configuration.md)
   "[native]": {},       // OmO Native-only overrides, typed base keys
@@ -136,9 +136,9 @@ The one supported way to turn a skill off. A name listed here is absent from the
 
 Security invariant: the OpenCode plugin honors `mcp_env_allowlist` and `browser_automation_engine.playwright_mcp_args` only from the user layer, including the user layer's own active profile block. Project layers cannot extend them.
 
-### `telemetry` (Senpi harness)
+### `telemetry` (Native harness)
 
-The optional `telemetry` block controls OmO Native product telemetry in Senpi. `telemetry.enabled` is a boolean and defaults to `true`, so telemetry ships enabled. Set it to `false` to turn telemetry off. This setting applies only to Senpi.
+The optional `telemetry` block controls OmO Native product telemetry in Senpi. `telemetry.enabled` is a boolean and defaults to `true`, so telemetry ships enabled. Set it to `false` to turn telemetry off. This setting applies only to OmO Native.
 
 ```jsonc
 {
@@ -152,11 +152,11 @@ The optional `telemetry` block controls OmO Native product telemetry in Senpi. `
 
 The block may also appear at the shared top level or in profile layers and follows the normal resolution order. Because typed config objects are strict, an older `@oh-my-opencode/omo-config-core` version that predates this key rejects a file containing `telemetry` instead of ignoring it. See [Mixed-version compatibility](#mixed-version-compatibility) before sharing one config across versions.
 
-### `memory` (Senpi harness)
+### `memory` (Native harness)
 
 The optional `memory` block configures the Senpi memory subsystem (`schema/memory.ts` `OmoMemorySettingsSchema`). Keys: `enabled` (default `true`), `agent` (default `"auto"`), the sub-blocks `reflection`, `nudge`, `recall` (the resident, read-only Kibitzer sidecar behind `recalled memory:` notices - one per main session, prompt and tool-call triggered, nudge-only output, no memory writes: `enabled` as the only off switch, `max_items` per wake, `category` defaulting to `quick`, `event_caps` defaulting to `{ tool_args: 400, result_head: 600, assistant: 1500, prompt: 4000 }` for its redacted event feed, `sidecar_max_tokens` defaulting to `48000` with a proactive reseed at 60%, `max_concurrent_wakes` defaulting to `2` as the machine-wide wake lease, and `tool_budget` defaulting to `8` read-only tool calls per wake), `facts`, `dream`, `people`, `soul`, `write_notice`, `sync`, `search`, plus `compile_warn_tokens` and per-agent overrides under `agents`. These recall keys can be set at the shared root, harness/profile layer, or per-agent override; layer values are deep-partial and later layers win.
 
-### `git_master` (Senpi harness)
+### `git_master` (Native harness)
 
 The optional `git_master` block controls commit attribution in Senpi (`schema/git-master.ts`). When the agent works with the `git-master` skill — reading it in the main session or loading it into a task child via `load_skills` — omo appends a commit-footer directive to the skill content only when you opt in.
 
@@ -177,7 +177,7 @@ To opt in to the body footer:
 }
 ```
 
-The block may live at the shared top level, in `[native]`, or in profile layers, and follows the normal resolution order. The OpenCode plugin keeps its own `git_master` key inside the freeform `[opencode]` block (see [configuration.md](./configuration.md)); this typed section applies to the Senpi harness.
+The block may live at the shared top level, in `[native]`, or in profile layers, and follows the normal resolution order. The OpenCode plugin keeps its own `git_master` key inside the freeform `[opencode]` block (see [configuration.md](./configuration.md)); this typed section applies to the Native harness.
 
 ### `models` (shared catalog)
 
@@ -198,7 +198,7 @@ A record of short name to catalog entry (`schema/model-catalog.ts`). The canonic
 
 When an agent or category `model` string matches a catalog key, resolution (`models/model-reference-resolution.ts`) swaps in the entry's model id and fills any unset `reasoning` from the entry. Tuning written at the use site always wins. A `[harness]` block (or a profile) can override individual catalog entries for its own view. Catalog cycles are detected and reported as `model_catalog_cycle` diagnostics instead of looping.
 
-### Model profiles (Senpi harness)
+### Model profiles (Native harness)
 
 A model profile is a named, ordered model chain you pick by intent ("Capable", "Deep work") instead of by model id. Two keys drive it (`schema/model-profile.ts`, `schema/config.ts`):
 
@@ -352,7 +352,7 @@ Task engine settings. The whole object is optional, but `provider_concurrency`, 
 
 `task.dag` is an optional block bounding the DAG orchestration subsystem (`schema/task.ts`): `max_nodes_per_run` (`64`), `max_runs_per_session` (`16`), `subscriber_ring` (`1000`), `heartbeat_ms` (`15000`), `history_default_limit` (`256`), `history_max_limit` (`1000`), `retention_days` (`7`), `max_prompt_bytes` (`262144`).
 
-`global_concurrency` caps how many tasks run at once per senpi process, across all model and provider lanes combined. It applies only to senpi; OpenCode `background_task` is unaffected (parity is a follow-up). The cap is per process, not cross-process or machine-wide: two senpi processes each get their own budget. A task spills to a later entry in its fallback chain whenever admission cannot seat it in the preferred model's lane — the per-model/provider/default lane limit is reached or its queue is occupied (the common case), or this global cap is full — even though the preferred model never failed. That later entry can be a DIFFERENT provider, with different pricing and different data handling. If that matters to you, remove cross-provider entries from your fallback chains or use single-model chains. No new storage or telemetry is introduced by this setting.
+`global_concurrency` caps how many tasks run at once per senpi process, across all model and provider lanes combined. It applies only to the senpi engine; OpenCode `background_task` is unaffected (parity is a follow-up). The cap is per process, not cross-process or machine-wide: two senpi processes each get their own budget. A task spills to a later entry in its fallback chain whenever admission cannot seat it in the preferred model's lane — the per-model/provider/default lane limit is reached or its queue is occupied (the common case), or this global cap is full — even though the preferred model never failed. That later entry can be a DIFFERENT provider, with different pricing and different data handling. If that matters to you, remove cross-provider entries from your fallback chains or use single-model chains. No new storage or telemetry is introduced by this setting.
 
 `state_dir` defaults to `<project_dir>/.omo/senpi-task` when unset (`packages/senpi-task/src/store/state-dir.ts`). Completion delivery is not configurable: every child completion is batched with any other ready notifications and steered into the parent's running turn at the next tool-call boundary; see the completion routing table in [`packages/senpi-task/AGENTS.md`](../../packages/senpi-task/AGENTS.md).
 
@@ -397,7 +397,7 @@ A record of profile name to a partial view (`schema/config.ts` `OmoConfigProfile
 }
 ```
 
-Profiles are inert until activated (see [Profile activation](#profile-activation)). When active, the profile's base keys fold over the shared base, and the profile's harness block folds over the top-level harness block. A config profile is a different thing from a model profile: see [Model profiles](#model-profiles-senpi-harness).
+Profiles are inert until activated (see [Profile activation](#profile-activation)). When active, the profile's base keys fold over the shared base, and the profile's harness block folds over the top-level harness block. A config profile is a different thing from a model profile: see [Model profiles](#model-profiles-native-harness).
 
 ### Model references and model strings
 

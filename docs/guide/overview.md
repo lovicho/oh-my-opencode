@@ -1,6 +1,6 @@
 # What Is Oh My OpenAgent?
 
-Oh My OpenAgent is a multi-model agent orchestration harness. This guide covers OmO Native (omo-senpi), the standalone `omo` command; the OpenCode and Codex editions ship separately. It turns a single AI agent into a coordinated development team that actually ships code.
+Oh My OpenAgent is a multi-model agent orchestration harness. This guide covers OmO Native, the standalone `omo` command; the OpenCode and Codex editions ship separately. It turns a single AI agent into a coordinated development team that actually ships code.
 
 Not locked to Claude. Not locked to OpenAI. Not locked to anyone.
 
@@ -51,7 +51,7 @@ Set one key in `omo.json`:
 
 At session start omo walks the chain and applies the first model your connected providers serve, then prints a notice naming the pick and the rungs it skipped. The switch is session-scoped: nothing is written to `settings.json`. Mid-session failures follow Senpi's own retry chains, not the profile.
 
-Want one exact model instead? Put it in the same key: `"model_profile": "anthropic/claude-opus-5"`. Anything with a `/` is a pin. The precedence is simple: a `--model` flag or scoped model wins, then a pinned model, then a profile, then Senpi's own default. Leave the key unset and omo doesn't touch the session model at all. Profiles pick the main session model only; categories and curated agents keep their own chains. Full detail in the [omo.json reference](../reference/omo-json.md#model-profiles-senpi-harness).
+Want one exact model instead? Put it in the same key: `"model_profile": "anthropic/claude-opus-5"`. Anything with a `/` is a pin. The precedence is simple: a `--model` flag or scoped model wins, then a pinned model, then a profile, then Senpi's own default. Leave the key unset and omo doesn't touch the session model at all. Profiles pick the main session model only; categories and curated agents keep their own chains. Full detail in the [omo.json reference](../reference/omo-json.md#model-profiles-native-harness).
 
 ---
 
@@ -94,7 +94,7 @@ For a deep dive into how the pieces collaborate, see the [Orchestration System G
 
 ---
 
-## How omo-senpi delegates
+## How OmO Native delegates
 
 ### The main agent
 
@@ -189,8 +189,8 @@ Override specific categories or curated agents in `omo.json`:
     // Quick tasks: fast and cheap
     "quick": { "model": "openai/gpt-5.6-luna-fast", "reasoning": "low" },
 
-    // Low-effort fallback: Grok 4.6 xhigh
-    "unspecified-low": { "model": "xai/grok-4.6", "reasoning": "xhigh" },
+    // Low-effort fallback: MiMo V2.6 Pro max
+    "unspecified-low": { "model": "xiaomi/mimo-v2.6-pro", "reasoning": "max" },
 
     // High-effort fallback: Opus 5, then GLM 5.3 and Kimi K3
     "unspecified-high": { "model": "anthropic/claude-opus-5", "reasoning": "xhigh" },
