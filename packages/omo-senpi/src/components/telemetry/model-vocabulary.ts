@@ -30,12 +30,13 @@ export const KNOWN_MODELS = Object.freeze({
   ]),
   "bailian-coding-plan": Object.freeze(["qwen3.6-flash"]),
   "chatgpt-subscription": Object.freeze([
-    "gpt-5.6-luna-fast", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-6-astra", "gpt-6-luna", "gpt-6-luna-fast", "gpt-6-sol",
+    "gpt-5.6-luna-fast", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-6-astra", "gpt-6-luna", "gpt-6-luna-fast", "gpt-6-sol", "gpt-6-sol-fast",
   ]),
   "claude-sdk-oauth": Object.freeze([
     "claude-fable-5", "claude-fable-5-1", "claude-haiku-4-5", "claude-opus-4-6", "claude-opus-5", "claude-opus-5-5", "claude-sonnet-5",
   ]),
-  deepseek: Object.freeze(["deepseek-v4-flash", "deepseek-v4-pro"]),
+  // `deepseek-flash` is DeepSeek V4.1 Flash; the retired `deepseek-v4-flash` alias stays readable for older sessions.
+  deepseek: Object.freeze(["deepseek-flash", "deepseek-v4-flash", "deepseek-v4-pro"]),
   google: Object.freeze(["gemini-3.1-pro", "gemini-3.6-flash"]),
   "github-copilot": Object.freeze([
     "claude-fable-5", "claude-fable-5-1", "claude-haiku-4-5", "claude-opus-4-6", "claude-opus-5", "claude-opus-5-5", "claude-sonnet-5",
@@ -45,10 +46,10 @@ export const KNOWN_MODELS = Object.freeze({
   "kimi-for-coding": Object.freeze(["k3", "kimi-for-coding-highspeed", "kimi-k3"]),
   moonshotai: Object.freeze(["kimi-k3"]),
   openai: Object.freeze([
-    "gpt-5.6-luna-fast", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-6-astra", "gpt-6-luna", "gpt-6-luna-fast", "gpt-6-sol",
+    "gpt-5.6-luna-fast", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-6-astra", "gpt-6-luna", "gpt-6-luna-fast", "gpt-6-sol", "gpt-6-sol-fast",
   ]),
   "openai-codex": Object.freeze([
-    "gpt-5.6-luna-fast", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-6-astra", "gpt-6-luna", "gpt-6-luna-fast", "gpt-6-sol",
+    "gpt-5.6-luna-fast", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-6-astra", "gpt-6-luna", "gpt-6-luna-fast", "gpt-6-sol", "gpt-6-sol-fast",
   ]),
   opencode: Object.freeze([
     "claude-fable-5", "claude-fable-5-1", "claude-opus-4-6", "claude-opus-5", "claude-opus-5-5", "claude-sonnet-5", "gemini-3.1-pro",

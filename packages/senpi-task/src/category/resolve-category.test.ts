@@ -42,13 +42,13 @@ const gpt56CategoryCases = [
   },
   {
     category: "deep",
-    modelId: "gpt-5.6-sol",
+    modelId: "gpt-6-sol",
     nativeVariant: "medium",
-    mixedWinner: { provider: "github-copilot", modelId: "gpt-5.6-sol", variant: "medium" },
+    mixedWinner: { provider: "github-copilot", modelId: "gpt-6-sol", variant: "medium" },
     copilotVariant: "medium",
     copilotFallbackEntry: {
-      providers: ["chatgpt-subscription", "github-copilot", "opencode"] as string[],
-      model: "gpt-5.6-sol",
+      providers: ["chatgpt-subscription", "openai", "github-copilot", "opencode"] as string[],
+      model: "gpt-6-sol",
       variant: "medium",
     },
   },
@@ -59,7 +59,7 @@ const gpt56CategoryCases = [
     mixedWinner: { provider: "github-copilot", modelId: "gpt-5.6-terra", variant: "high" },
     copilotVariant: "high",
     copilotFallbackEntry: {
-      providers: ["chatgpt-subscription", "github-copilot", "opencode"] as string[],
+      providers: ["chatgpt-subscription", "openai", "github-copilot", "opencode"] as string[],
       model: "gpt-5.6-terra",
       variant: "high",
     },
@@ -251,9 +251,9 @@ describe("resolveCategory", () => {
     expect(resolved.spec.reasoningEffort).toBe("medium")
   })
 
-  test("#given quick primary is unavailable and the deepseek rung is available #when resolved #then delegate-core fallback chain reaches deepseek-v4-flash", () => {
+  test("#given quick primary is unavailable and the deepseek rung is available #when resolved #then delegate-core fallback chain reaches deepseek-flash", () => {
     // given
-    const models = registry([model("deepseek", "deepseek-v4-flash")])
+    const models = registry([model("deepseek", "deepseek-flash")])
 
     // when
     const result = resolveCategory("quick", {}, models)
@@ -261,12 +261,12 @@ describe("resolveCategory", () => {
     // then
     const resolved = expectResolved(result)
     expect(resolved.spec.provider).toBe("deepseek")
-    expect(resolved.spec.modelId).toBe("deepseek-v4-flash")
+    expect(resolved.spec.modelId).toBe("deepseek-flash")
     expect(resolved.spec.variant).toBe("off")
     expect(resolved.modelSelection.matchedFallback).toBe(true)
     expect(resolved.modelSelection.fallbackEntry).toEqual({
       providers: ["deepseek"],
-      model: "deepseek-v4-flash",
+      model: "deepseek-flash",
       variant: "off",
     })
   })
@@ -331,7 +331,7 @@ describe("resolveCategory", () => {
     })
   })
 
-  test("#given only transformed Vercel GPT-5.6 models #when deep categories resolve #then each keeps its native top rung", () => {
+  test("#given only transformed Vercel GPT models #when deep categories resolve #then each keeps its native top rung", () => {
     for (const { category, modelId, nativeVariant } of gpt56CategoryCases) {
       const gatewayModelId = `openai/${modelId}`
       const result = expectResolved(resolveCategory(category, {}, registry([model("vercel", gatewayModelId)])))
@@ -344,7 +344,7 @@ describe("resolveCategory", () => {
     }
   })
 
-  test("#given transformed Vercel and Copilot GPT-5.6 models #when deep categories resolve #then the first available rung provider wins", () => {
+  test("#given transformed Vercel and Copilot GPT models #when deep categories resolve #then the first available rung provider wins", () => {
     for (const { category, modelId, mixedWinner } of gpt56CategoryCases) {
       const gatewayModelId = `openai/${modelId}`
       const models = registry([
@@ -360,7 +360,7 @@ describe("resolveCategory", () => {
     }
   })
 
-  test("#given only Copilot GPT-5.6 models #when deep categories resolve #then each uses its copilot rung", () => {
+  test("#given only Copilot GPT models #when deep categories resolve #then each uses its copilot rung", () => {
     for (const { category, modelId, copilotVariant, copilotFallbackEntry } of gpt56CategoryCases) {
       const result = expectResolved(resolveCategory(category, {}, registry([model("github-copilot", modelId)])))
 
@@ -480,11 +480,11 @@ describe("builtin category defaults", () => {
       ["visual-engineering", "anthropic/claude-fable-5-1", "max"],
       ["artistry", "anthropic/claude-fable-5-1", "max"],
       ["ultrabrain", "chatgpt-subscription/gpt-6-astra", "max"],
-      ["deep-low", "chatgpt-subscription/gpt-6-sol", "medium"],
-      ["deep-high", "chatgpt-subscription/gpt-6-astra", "high"],
+      ["deep-low", "chatgpt-subscription/gpt-6-sol-fast", "medium"],
+      ["deep-high", "chatgpt-subscription/gpt-6-astra", "xhigh"],
       ["quick", "chatgpt-subscription/gpt-6-luna-fast", "low"],
       ["unspecified-low", "xiaomi/mimo-v2.6-pro", "max"],
-      ["unspecified-high", "anthropic/claude-opus-5-5", "max"],
+      ["unspecified-high", "anthropic/claude-opus-5-5", "medium"],
       ["architect", "anthropic/claude-fable-5-1", "max"],
       ["writing", "anthropic/claude-fable-5-1", "low"],
     ])
@@ -493,7 +493,7 @@ describe("builtin category defaults", () => {
     expect(BUILTIN_CATEGORY_REQUIRES_MODEL).toEqual({
       architect: ["claude-fable-5-1"],
       ultrabrain: ["gpt-6-astra", "gpt-5.6-sol"],
-      "deep-low": ["gpt-6-sol", "gpt-5.6-sol"],
+      "deep-low": ["gpt-6-sol-fast", "gpt-6-sol"],
       "deep-high": ["gpt-6-astra"],
     })
   })

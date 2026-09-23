@@ -57,13 +57,13 @@ describe("resolveAgent category stage", () => {
   test("#given categories deep then unspecified-high #when both resolve #then the deep model wins and the later category extends the runtime chain", () => {
     // given
     const agents = categorizedAgent(["deep", "unspecified-high"])
-    const models = registry([model("openai", "gpt-5.6-sol"), model("anthropic", "claude-opus-5-5")])
+    const models = registry([model("openai", "gpt-6-sol"), model("anthropic", "claude-opus-5-5")])
 
     // when
     const result = expectResolved(resolveAgent("categorized", agents, models))
 
     // then
-    expect(result.model).toBe("openai/gpt-5.6-sol")
+    expect(result.model).toBe("openai/gpt-6-sol")
     expect(result.resolved_model?.reasoning).toBe("medium")
     expect(result.fallback_models?.map((record) => record.display)).toContain("anthropic/claude-opus-5-5")
     for (const record of result.fallback_models ?? []) {
@@ -82,7 +82,7 @@ describe("resolveAgent category stage", () => {
 
     // then
     expect(result.model).toBe("anthropic/claude-opus-5-5")
-    expect(result.resolved_model?.reasoning).toBe("max")
+    expect(result.resolved_model?.reasoning).toBe("medium")
   })
 
   test("#given categories deep then unspecified-low #when only the low chain head is available #then it resolves at that chain head", () => {
@@ -108,7 +108,7 @@ describe("resolveAgent category stage", () => {
 
     // then
     expect(result.model).toBe("anthropic/claude-opus-5-5")
-    expect(result.resolved_model?.reasoning).toBe("max")
+    expect(result.resolved_model?.reasoning).toBe("medium")
   })
 
   test("#given an omo.json deep category model override #when the agent resolves #then the user model reaches the agent", () => {
@@ -127,7 +127,7 @@ describe("resolveAgent category stage", () => {
   test("#given a category that carries a prompt append and tools #when the agent resolves through it #then the agent keeps its own prompt and allowlist", () => {
     // given
     const agents = categorizedAgent(["deep", "unspecified-high"])
-    const models = registry([model("openai", "gpt-5.6-sol")])
+    const models = registry([model("openai", "gpt-6-sol")])
 
     // when
     const result = expectResolved(resolveAgent("categorized", agents, models))

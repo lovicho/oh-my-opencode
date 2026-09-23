@@ -32,14 +32,12 @@ export const CATEGORY_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
   },
   "deep-low": {
     fallbackChain: [
+      // The Fast (priority) tier exists only on the OpenAI lanes; Copilot and OpenCode Zen serve
+      // plain gpt-6-sol, so the next rung keeps the lane open there at the same effort.
+      { providers: ["openai", "chatgpt-subscription"], model: "gpt-6-sol-fast", variant: "medium" },
       {
         providers: ["openai", "chatgpt-subscription", "github-copilot", "opencode"],
         model: "gpt-6-sol",
-        variant: "medium",
-      },
-      {
-        providers: ["openai", "chatgpt-subscription", "github-copilot", "opencode"],
-        model: "gpt-5.6-sol",
         variant: "medium",
       }
     ],
@@ -49,7 +47,7 @@ export const CATEGORY_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
       {
         providers: ["openai", "chatgpt-subscription", "github-copilot", "opencode"],
         model: "gpt-6-astra",
-        variant: "high",
+        variant: "xhigh",
       }
     ],
   },
@@ -74,8 +72,8 @@ export const CATEGORY_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
   },
   quick: {
     fallbackChain: [
-      { providers: ["chatgpt-subscription"], model: "gpt-6-luna-fast", variant: "low" },
-      { providers: ["deepseek"], model: "deepseek-v4-flash", variant: "off" },
+      { providers: ["openai", "chatgpt-subscription"], model: "gpt-6-luna-fast", variant: "low" },
+      { providers: ["deepseek"], model: "deepseek-flash", variant: "off" },
       {
         providers: ["qwen-token-plan", "alibaba-token-plan", "bailian-coding-plan"],
         model: "qwen3.6-flash",
@@ -119,7 +117,7 @@ export const CATEGORY_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
       {
         providers: ["anthropic", "anthropic-api", "github-copilot", "opencode"],
         model: "claude-opus-5-5",
-        variant: "max",
+        variant: "medium",
       },
       { providers: ["zai-coding-plan", "opencode-go"], model: "glm-5.3", variant: "max" },
       {
@@ -130,6 +128,9 @@ export const CATEGORY_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
     ],
   },
   writing: {
+    // Writing runs on Claude only: with none of these models reachable the lane is unavailable instead
+    // of borrowing another family through the session or system default.
+    requiresAnyModel: true,
     fallbackChain: [
       {
         providers: ["anthropic", "anthropic-api", "github-copilot", "opencode"],
