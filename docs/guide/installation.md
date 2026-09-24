@@ -172,7 +172,7 @@ bun add -g omo-ai@beta
 omo
 ```
 
-A bare `bun add -g omo-ai` fails with ETARGET on purpose; every published version is a prerelease, so the default channel never resolves. See the [omo-ai publishing runbook](../reference/omo-ai-publishing.md) for the mechanism.
+A bare `bun add -g omo-ai` fails with ETARGET on purpose; every published version is a prerelease, so the default channel never resolves. Without bun, `npm i -g omo-ai@beta` works too. See the [omo-ai publishing runbook](../reference/omo-ai-publishing.md) for the mechanism.
 
 **Where omo keeps its state.** OmO Native stores engine state under `~/.omo/agent`
 (`settings.json`, `auth.json`, `models.json`, and friends). A pre-unification flat `~/.omo` layout
@@ -182,15 +182,19 @@ without copying it, so an older standalone install keeps working. Set `OMO_CODIN
 override the location; the legacy `SENPI_*` and `PI_*` variables are still read when the `OMO_*`
 one is unset.
 
-**Upgrade order on older machines.** If the machine still has oh-my-openagent/oh-my-opencode 4.19.4 or earlier installed globally, that package owns a global `omo` bin and the install above fails with EEXIST. Upgrade or uninstall the old package first, then install `omo-ai@beta`.
+**Older machines: the global `omo` name is already taken.** oh-my-openagent/oh-my-opencode 4.19.4 and earlier ship their own global `omo` command. A raw `npm i -g omo-ai@beta` on such a machine fails with EEXIST, and a raw `bun add -g omo-ai@beta` succeeds while the old command keeps winning on PATH, so `omo --version` still prints `4.19.4`. `bunx oh-my-openagent@beta install --platform=native` (`npx` without bun; the `@beta` tag is required, `latest` is 4.19.4 and has no native platform) handles it: it removes that one stale `omo` entry (the old package and its other commands stay), installs `omo-ai@beta`, and then verifies `omo --version`. If another `omo` still shadows it, the installer prints the exact `export PATH=...` line to fix the order. When you later remove the old package: `bun remove -g oh-my-openagent` leaves omo-ai's `omo` alone, but `npm uninstall -g oh-my-openagent` deletes every bin name the old package declared, including the `omo` that npm-installed omo-ai now owns, so run `npm i -g omo-ai@beta` again right after it.
 
 ### First run: `omo setup`
 
 `omo setup` is the onboarding command for OmO Native. It replaces the old manual configure-by-hand guidance; there's nothing to hand-edit anymore. It runs in three stages:
 
 1. **Detect (read-only).** Scans your other coding-agent installs for provider credentials: the senpi engine's agent dir (`SENPI_CODING_AGENT_DIR`, else `~/.senpi/agent`), opencode (`~/.local/share/opencode/auth.json`, XDG-aware), oh-my-pi (`~/.omp/agent/agent.db`), and gajae-code (`~/.gjc/agent/agent.db`). It reports, per harness, whether it's installed and which provider ids have credentials of which type. Credential values are never printed. The oh-my-pi and gajae-code databases are opened read-only.
-2. **Import (consent-gated).** Only after you confirm (interactively, or with `--yes`; `--dry-run` previews without writing), compatible API-key credentials are imported into the engine's auth store. Existing entries are never overwritten, and only providers the engine actually knows are imported. OAuth entries are reported but never imported. Source stores are never written; imports go to the engine's `auth.json` only, atomically and with a timestamped backup.
-3. **Model report.** Prints a provider/model availability summary pointing at the [agent-model matching guide](./agent-model-matching.md), plus a ready-to-paste config snippet for any custom-endpoint providers it found. Report only; setup never writes model config for you.
+2. **Import (consent-gated).** Only after you confirm (interactively, or with `--yes`; `--dry-run` previews without writing), compatible API-key credentials are imported into the engine's auth store. Existing entries are never overwritten, and only providers the engine actually knows are imported - including the ones whose id differs between harnesses but whose endpoint is the same, such as opencode's `zai-coding-plan` key landing on the `zai` provider. OAuth entries are reported but never imported: a provider-bound token cannot be copied, so setup names the sign-in to run instead (start `omo`, then `/login <provider>` - `omo auth` only prints or checks credentials that already exist). An API key whose provider id matches nothing omo serves is reported with the same next step: define the provider and its baseUrl in the engine's `models.json`, then `/login` it. Source stores are never written; imports go to the engine's `auth.json` only, atomically and with a timestamped backup.
+
+   The same stage carries over the rest of an opencode setup, with its own preview and its own confirmation: **MCP servers** declared in opencode's user config (`~/.config/opencode/config.json`, `opencode.json` and `opencode.jsonc`, merged the way opencode merges them; XDG-aware, with `OPENCODE_CONFIG`, `~/.opencode/` and `OPENCODE_CONFIG_DIR` layered on top) are converted to the engine's schema and merged into the global `~/.omo/agent/mcp.json`, and **global skills** under those directories' `skills/` or `skill/` folders are copied into `~/.omo/agent/skills/`. Both are global, so they are available in every project rather than only the one you happened to run setup in. A server or skill name that already exists is kept as-is and reported as skipped, and so is a skill named like one omo already bundles; `mcp.json` gets a timestamped backup before it is rewritten. A server whose config uses shell command substitution or a `{file:...}` placeholder, and a skill without a `SKILL.md` description, are left out with a notice that says what to do instead of being copied into something the engine would reject or silently ignore.
+
+   **Custom providers** (`provider.<id>` blocks in those same config files) come last, again with their own preview and confirmation. The preview line reads like `custom provider acme -> https://api.acme.example/v1 (openai-completions, from @ai-sdk/openai-compatible), 2 model(s): acme/acme-large, acme/acme-small`. Each one is written into `~/.omo/agent/models.json` with its base URL, its models and their context/output limits, and its API key goes into `~/.omo/agent/auth.json`, so the first session can select `acme/acme-large`. The `npm` package decides the protocol: `@ai-sdk/openai-compatible` (also what opencode assumes when `npm` is missing) becomes OpenAI-compatible completions, `@ai-sdk/anthropic` becomes Anthropic messages, and `@ai-sdk/openai` becomes OpenAI responses. The key is taken in opencode's own order: `options.apiKey`, else the provider's entry in opencode's `auth.json`, else the single variable its `env` names. `{env:NAME}` becomes the engine's `${NAME}`. A provider that uses any other package, an id omo already serves, a baseURL that is not a fixed URL, or no usable model is reported by name and skipped. A provider id already in `models.json` or a key already in `auth.json` is kept as-is, and both files get a timestamped backup before they are rewritten.
+3. **Model report.** Prints a provider/model availability summary pointing at the [agent-model matching guide](./agent-model-matching.md), plus a ready-to-paste config snippet for a custom endpoint when setup found no opencode custom provider to carry over. Apart from those carried-over custom providers, setup never writes model config for you.
 
 ## For LLM Agents
 
@@ -637,7 +641,7 @@ Not all models behave the same way. Understanding "similar" families helps you m
 
 #### What each role does and which model it gets
 
-**The main agent** is the session you are talking to. It runs on your session model; there is no separate agent chain for it. Claude Opus 5.5 is the recommended choice, with GPT 5.6 Sol as the recommended GPT configuration. Models with tuned prompt presets are listed in [Agent Model Matching](./agent-model-matching.md).
+**The main agent** is the session you are talking to. It runs on your session model; there is no separate agent chain for it. Claude Opus 5.5 is the recommended choice, with GPT-6 Astra or GPT-6 Sol as the recommended GPT configuration. With no `model_profile`, a fresh OmO Native session picks the first model you have connected from the Recommended list (Opus 5.5, Fable 5.1, Kimi K3, GPT-6 Astra, GPT-6 Sol, GLM 5.3). Models with tuned prompt presets are listed in [Agent Model Matching](./agent-model-matching.md).
 
 **Curated agents** (read-only helpers the main agent delegates to through `task(subagent_type: ...)`; chains from `packages/senpi-task/src/agents/builtin/fallback-chains.ts`):
 
@@ -675,11 +679,11 @@ If the user wants to override which model a curated agent or category uses, edit
 }
 ```
 
-**Lower-risk overrides** (compatible behavior): main agent Opus → Sonnet/Kimi K3/GLM 5.2 (each has a tuned prompt preset); Plan Consultant Sonnet → Opus/GPT-5.6 Sol; Plan Reviewer GPT-6 Astra → Opus 5 (max).
+**Lower-risk overrides** (compatible behavior): main agent Opus 5.5 → Fable 5.1/Kimi K3/GLM 5.3 (each is on the Recommended list and has a tuned prompt preset); Plan Consultant Fable 5.1 → Opus 5.5/Kimi K3; Plan Reviewer GPT-6 Astra → Opus 5.5 (max).
 
 **GLM 5.2 as the session model:** GLM 5.2 gets the GLM-calibrated prompt preset because its model ID is recognized as GLM. It still has less maintainer validation than Claude or Kimi.
 
-**Dangerous overrides** (no prompt support): main agent → GPT models without a preset (the supported GPT paths cover 5.4, 5.5, and 5.6 Sol); `explore` → Opus (massive cost waste); `librarian` → Opus (same).
+**Dangerous overrides** (no prompt support): main agent → GPT models without a preset (presets cover the GPT-6 family and the GPT-5 line through 5.6); `explore` → Opus (massive cost waste); `librarian` → Opus (same).
 
 #### Optional: community model-management tools
 
@@ -760,7 +764,7 @@ Add custom skills under `.opencode/skills/<name>/SKILL.md` (project scope) or `~
 
 After verification, tell the user:
 
-1. **The main agent runs on your session model, and Claude Opus 5.5 is strongly recommended** (GPT 5.6 Sol for a GPT setup). Other models may noticeably degrade the experience.
+1. **The main agent runs on your session model, and Claude Opus 5.5 is strongly recommended** (GPT-6 Astra or GPT-6 Sol for a GPT setup). Other models may noticeably degrade the experience.
 2. **Feeling lazy?** Just include `ultrawork` (or `ulw`) in your prompt. The agent figures out the rest.
 3. **Need precision?** Run `/ulw-plan` to produce a plan under `.omo/plans/`, then run `/ulw-execute` so the main agent executes the verified plan in the same session.
 4. **Your own agent/category setup?** Read [`docs/guide/agent-model-matching.md`](agent-model-matching.md) — the assistant can interview the user and tune the config.

@@ -102,6 +102,15 @@ describe("BUILTIN_MODEL_PROFILES", () => {
     expect(misordered).toEqual([])
   })
 
+  it("heads every GLM rung with engine zai then zai-coding-cn", () => {
+    const glmRungs = rungs().filter((rung) => rung.model.startsWith("glm-"))
+    expect(glmRungs.length).toBeGreaterThan(0)
+    const misordered = glmRungs
+      .filter((rung) => rung.providers[0] !== "zai" || rung.providers[1] !== "zai-coding-cn")
+      .map((rung) => `${rung.profile}: ${rung.providers.join("|")}/${rung.model}`)
+    expect(misordered).toEqual([])
+  })
+
   it("heads every Claude rung with the anthropic-subscription lane", () => {
     const claudeRungs = rungs().filter((rung) => rung.model.startsWith("claude-"))
     expect(claudeRungs.length).toBeGreaterThan(0)
@@ -122,10 +131,9 @@ describe("BUILTIN_MODEL_PROFILES", () => {
     ])
   })
 
-  it("splits geeky-normal so sol-fast stays on the subscription/API lanes and plain sol also opens Copilot/OpenCode", () => {
+  it("runs geeky-normal as gpt-5.6-sol medium on every GPT lane", () => {
     expect(BUILTIN_MODEL_PROFILES["geeky-normal"]?.models).toEqual([
-      { providers: ["chatgpt-subscription", "openai"], model: "gpt-6-sol-fast", variant: "medium" },
-      { providers: ["chatgpt-subscription", "openai", "github-copilot", "opencode"], model: "gpt-6-sol", variant: "medium" },
+      { providers: ["chatgpt-subscription", "openai", "github-copilot", "opencode"], model: "gpt-5.6-sol", variant: "medium" },
     ])
   })
 

@@ -11,7 +11,9 @@ import type { DelegateFallbackEntry } from "@oh-my-opencode/delegate-core"
  * a single `provider/model` string, so a Copilot-only, Bedrock-only or gateway-only
  * user still resolves the model instead of reading "unavailable" while the model
  * sits right there in the registry. Provider spellings are copied from those
- * chains, including the senpi-only `kimi-coding` id.
+ * chains: senpi-only `kimi-coding` plus the leftover OpenCode `kimi-for-coding`
+ * alias those chains keep, and the engine GLM ids `zai` / `zai-coding-cn` (not
+ * OpenCode's `zai-coding-plan`; #8824).
  *
  * The table is additive data: an `omo.json` `model_profiles.<name>` entry replaces
  * the builtin of the same name WHOLESALE (see `resolve.ts`), so a later change
@@ -51,7 +53,8 @@ export const DEFAULT_MODEL_PROFILE_ID = "recommended"
 
 const CLAUDE_PROVIDERS = ["anthropic-subscription", "anthropic", "anthropic-api", "github-copilot", "opencode"] as const
 const KIMI_PROVIDERS = ["kimi-coding", "kimi-for-coding", "moonshotai", "opencode-go"] as const
-const GLM_PROVIDERS = ["zai-coding-plan", "opencode-go"] as const
+// Engine Z.AI ids. `omo setup` imports OpenCode's `zai-coding-plan` key as `zai` (#8799).
+const GLM_PROVIDERS = ["zai", "zai-coding-cn", "opencode-go"] as const
 const GPT_PROVIDERS = ["chatgpt-subscription", "openai", "github-copilot", "opencode"] as const
 
 // Key order is the order a picker renders. `deep` is deliberately NOT an id: builtin
@@ -97,12 +100,7 @@ export const BUILTIN_MODEL_PROFILES: Readonly<Record<string, BuiltinModelProfile
     tier: "normal",
     displayName: "Geeky · Normal",
     description: "Works on one task and thinks it through.",
-    models: [
-      // The Fast tier exists only on the ChatGPT subscription and API lanes; Copilot and
-      // OpenCode serve plain gpt-6-sol, so the next rung keeps the lane open at the same effort.
-      { providers: ["chatgpt-subscription", "openai"], model: "gpt-6-sol-fast", variant: "medium" },
-      { providers: [...GPT_PROVIDERS], model: "gpt-6-sol", variant: "medium" },
-    ],
+    models: [{ providers: [...GPT_PROVIDERS], model: "gpt-5.6-sol", variant: "medium" }],
   },
   "geeky-heavy": {
     family: "geeky",
