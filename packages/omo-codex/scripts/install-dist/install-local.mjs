@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// omo-codex-install:84fdce22eb0fe16fc5116fe334da17ae2005810fd47f55c0d387a06c7bc0948c:57958fe4620dd1c5b638a6c41e972cbaa0c85e8f93f17dc44bcf238448cf23c7
+// omo-codex-install:99f7a7a838a0f4835d33136c2cd44294fc11198277b5cff65666fe2a1d368e34:2a28edcca9bbb32319f893df8e822db992610eaac6b4226395e9cb365da99eb3
 var __esm = (fn, res, err) => () => {
   if (fn)
     try {
@@ -9984,7 +9984,7 @@ var package_default;
 var init_package = __esm(() => {
   package_default = {
     name: "@oh-my-opencode/omo-codex",
-    version: "5.1.4",
+    version: "5.1.6",
     type: "module",
     private: true,
     description: "Codex harness adapter for oh-my-openagent. Vendored Codex plugin namespace (omo) + TypeScript installer + telemetry.",
@@ -12529,6 +12529,12 @@ ${featureName} = true
   }
   return replaceOrInsertSetting(config, section, featureName, "true");
 }
+function removeFeature(config, featureName) {
+  const section = findTomlSection(config, "features");
+  if (section !== null)
+    return removeSetting(config, section, featureName);
+  return removeRootSetting(config, `features.${featureName}`);
+}
 
 // packages/omo-codex/src/install/codex-config-marketplaces.ts
 var SISYPHUS_LEGACY_MARKETPLACES = ["lazycodex", "code-yeongyu-codex-plugins"];
@@ -13121,6 +13127,7 @@ async function updateCodexConfig(input) {
   config = ensureFeatureEnabled(config, "plugins");
   config = ensureFeatureEnabled(config, "plugin_hooks");
   config = ensureFeatureEnabled(config, "multi_agent");
+  config = removeFeature(config, "child_agents_md");
   config = removeUnsupportedCodexMultiAgentModeConfig(config);
   config = ensureCodexReasoningConfig(config, applyReasoningOverride(await readCodexModelCatalog(input.repoRoot), input.reasoning));
   config = ensureCodexMultiAgentV2Config(config, {
