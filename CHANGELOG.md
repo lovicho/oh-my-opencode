@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.1.15] - 2026-10-04
+
+**A new `auto` permission preset approves only what it can prove stays inside your project.** 5.1.15 runs on senpi 2026.10.6, whose `auto` preset approves an action without asking only when it can show the action stays inside the project, judged on the exact file each tool will open; anything it can't pin down still asks, and your own deny and ask rules still win. ([senpi#2614](https://github.com/code-yeongyu/senpi/pull/2614), [senpi#2688](https://github.com/code-yeongyu/senpi/pull/2688))
+
+### Fixed
+
+**A question a session relayed to a chat thread closes when you answer it in the terminal.** Before, a relayed ask_user question answered (or timed out, or dismissed) in the session's own client stayed pending in the gateway store, so a chat connector kept that thread's later replies waiting until someone answered in chat. Outbox rows now also say whether a relayed answer is still being handed to the session (`answer_state`), so a connector waits for a delivered answer instead of treating a claim as settled. Thanks to @effortprogrammer. ([#9506](https://github.com/code-yeongyu/oh-my-openagent/pull/9506))
+
+**Editing your config no longer gets a hot reload rejected over a deprecated-key notice.** Renamed keys such as `deep` -> `deep-low` still load, but any edit that touched one produced a new notice, and the reload was refused. Thanks to @davhdavh for the report and @cynkai for the fix. ([#8555](https://github.com/code-yeongyu/oh-my-openagent/issues/8555), [#8878](https://github.com/code-yeongyu/oh-my-openagent/pull/8878))
+
+**`thread_read` pages forward when given `next_cursor`.** A truncated read returned a cursor, but retrying with it returned the same first window again. Thanks to @cynkai. ([#9435](https://github.com/code-yeongyu/oh-my-openagent/pull/9435))
+
+**A memory usage write that fails after shutdown is logged instead of surfacing as an unhandled rejection.** Thanks to @Dante-dan. ([#9524](https://github.com/code-yeongyu/oh-my-openagent/pull/9524))
+
+### Changed
+
+**omo runs on senpi 2026.10.6.** Besides the `auto` preset above, in that release the startup banner folds into one summary line; a 429 or 5xx from the provider shows as one retry banner instead of raw JSON, while a failed compaction still shows as an error; tool-card diffs read at 7:1 contrast and each edit card shows its change count; the `apply_patch` streaming preview stays bounded; `/files` and `/diff` open on Windows again; a first run with no provider gets the `/login` guidance; Linux x64 gets the native PTY backend. Full list: [senpi 2026.10.6](https://github.com/code-yeongyu/senpi/releases/tag/v2026.10.6).
+
+**A finished subagent's card reads as a summary**, for example `ran 2m 14s · 5 tools · $0.4213 (CH: 87%)`, instead of a line of debug tokens. ([senpi#2654](https://github.com/code-yeongyu/senpi/issues/2654), [#9513](https://github.com/code-yeongyu/oh-my-openagent/pull/9513))
+
+**Memory's `/doctor` checks load on first use** instead of with the extension, so startup loads less; the command behaves the same. Thanks to @Dante-dan. ([#9520](https://github.com/code-yeongyu/oh-my-openagent/pull/9520))
+
+
+## [5.1.14] - 2026-10-03
+
 **Permission checks can no longer switch themselves off.** Up to 5.1.13, a failure while the permission system started (a misspelled `permissionPreset` in settings or on the command line, a `null` permission rule, or an unreadable approvals file) left every tool call running with no permission check, and nothing said so. 5.1.14 runs on senpi 2026.10.5, which refuses tool calls with `Permission setup failed: <reason>` until the setting is fixed. If you can't update yet, check that `permissionPreset` names a preset that exists and that no permission rule is `null`. ([senpi#2617](https://github.com/code-yeongyu/senpi/issues/2617), [senpi#2618](https://github.com/code-yeongyu/senpi/pull/2618))
 
 ### Fixed
@@ -22,6 +47,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **A computer-use permission denial is an error in code mode too.** Through a JS or Python eval, a denied computer call came back without the error flag, so a model could miss the denial and keep acting; it now fails the call there as it does on a direct call. ([#9475](https://github.com/code-yeongyu/oh-my-openagent/issues/9475), [#9482](https://github.com/code-yeongyu/oh-my-openagent/pull/9482))
 
 **Windows: a delegated task you kill is reported as killed, not as a crash, and memory no longer loses a state write to a briefly held file.** A kill is now recognised from the runner's own request instead of from the child's stderr, and memory's atomic state rename retries the few-millisecond hold Windows places on an open target. ([#9471](https://github.com/code-yeongyu/oh-my-openagent/issues/9471), [#9501](https://github.com/code-yeongyu/oh-my-openagent/pull/9501), [#9491](https://github.com/code-yeongyu/oh-my-openagent/pull/9491))
+
+**The computer-use doctor check on macOS reports an engine that never replied as a timeout instead of failing with `EPERM`.** Cleaning up the timed-out probe now treats a process group that is already exiting as gone. Thanks to @MoerAI. ([#9422](https://github.com/code-yeongyu/oh-my-openagent/issues/9422), [#9464](https://github.com/code-yeongyu/oh-my-openagent/pull/9464))
+
+Thanks to @MoerAI for moving the task engine's child event channel into `senpi-task`, where the computer-use component now imports it from. ([#9454](https://github.com/code-yeongyu/oh-my-openagent/issues/9454), [#9467](https://github.com/code-yeongyu/oh-my-openagent/pull/9467))
 
 ### Changed
 
