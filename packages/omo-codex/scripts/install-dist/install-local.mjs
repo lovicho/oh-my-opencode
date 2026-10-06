@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// omo-codex-install:6f163737dadf03a94b5594287ba089075cef243c3843f5e1546e32e82eee950a:4ce0fd8f2d974f0ad1e9d1b309a810bd2c09ff86808b5a4f46a28a63721cf1f3
+// omo-codex-install:dcaa849500c5bee142f63492cf470ac1830de7e8864b2ea0c8cf544a588dc261:535eafcbca0e9ae9339cf9044f35cc11b1a57e8a569a112765bd170620a0a262
 var __esm = (fn, res, err) => () => {
   if (fn)
     try {
@@ -9984,7 +9984,7 @@ var package_default;
 var init_package = __esm(() => {
   package_default = {
     name: "@oh-my-opencode/omo-codex",
-    version: "5.1.17",
+    version: "5.1.19",
     type: "module",
     private: true,
     description: "Codex harness adapter for oh-my-openagent. Vendored Codex plugin namespace (omo) + TypeScript installer + telemetry.",
@@ -11449,6 +11449,14 @@ async function installCachedPlugin(input) {
     await rewriteCachedManifestRoot(tempPath, tempPath, targetPath);
     await assertHookCommandTargets(tempPath);
     await promoteDirectory(tempPath, targetPath, input.renameDirectory ?? rename);
+    const versions = await readdir4(dirname4(targetPath), { withFileTypes: true });
+    for (const entry of versions) {
+      if (!entry.isDirectory() || entry.name === input.version || entry.name.startsWith("."))
+        continue;
+      if (!/^[a-zA-Z0-9_+-][a-zA-Z0-9._+-]*$/.test(entry.name))
+        continue;
+      await rm4(join10(dirname4(targetPath), entry.name), { recursive: true, force: true });
+    }
   } catch (error) {
     await rm4(tempPath, { recursive: true, force: true });
     throw error;
