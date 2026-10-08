@@ -1,3 +1,46 @@
+## 2026-10-05 - A relayed report or a quoted mention no longer arms ultrawork or skill pointers (#9600)
+
+`skill-pointers/strip-quoted-regions.ts`, the masking that both `ultrawork` and `skill-pointers` run before they look for a keyword, now also hides text that is someone else's:
+- **A relayed message:** one that opens with a sender header is masked whole. The header is a bracketed tag such as `[REPORT]` or `[a -> b]`, or `Name (id), recipient:` / `Name (id) to recipient:`. A report pasted into a root session that describes a bug and so mentions `ulw`, `mass ulw` or a skill name used to arm the directive and inject pointers there.
+- **A Markdown block-quote line** (`> ...`).
+- **A span inside straight or curly double quotes** on one line.
+
+Typed asks keep arming: the keyword at the end of a Korean sentence, `mass ulw research ...`, a short mid-message `..., ulw, and ...`, and a leading `ulw <task>`. Measured over two weeks of local sessions, a third of all arms were relayed reports. A first-or-last-word rule or a slash-only rule would instead have dropped most typed arms, because mid-message is the most common typed form.
+
+Live: `scripts/qa/skill-pointers-e2e.mjs` gains a relayed-report, a quoted-mention and a Korean sentence-ending scenario. It now judges only the session transcript, because the engine's runtime snapshot under the agent dir ships docs containing `<ultrawork-mode>`, which made every whole-dir check pass or fail regardless of the session.
+
+Tests: `ultrawork-arming.test.ts` (relayed and quoted inputs do not arm; four typed forms still arm) and `skill-pointers-suppression.test.ts` (relayed and quoted mentions inject no pointer). Both fail on `dev`, and removing any one of the three masks fails them again.
+## 2026-10-06 - The slash picker lists each bundled skill once (#9648)
+
+`components/skill-commands/autocomplete.ts`: the top-level `/` list showed every bundled skill twice, as its bare alias (#9042) and its `skill:<name>` row. The alias now takes the `skill:<name>` row's place, so each skill is one row and senpi's ranking of everything else is unchanged; an alias whose skill row is not on the page is still offered at the end. A bare `/` is left as senpi lists it (senpi lists no `skill:` rows there). Typing `/skill:` still lists every skill under its `skill:` name. A skill whose bare name a same-named template or command shadows keeps its `skill:<name>` row, the only way left to reach it. Submitting either form is unchanged: the bare form is still rewritten to the `/skill:` form and recorded as a human invocation.
+## 2026-10-05 - Live fallback QA covers process children and a turn near compaction (#9582)
+
+`scripts/qa/task-runtime-fallback-e2e.mjs`:
+- `limit-after-tool` now requires the tool call before the in-session hop on every process runner. The child-process `N/A` is gone now that a process child carries its own chain.
+- New scenario `limit-near-compaction`: the same tool-then-limit turn, but the tool-call response reports a context past the compaction threshold of a 128K window (114K input; senpi refuses to start a session under its start minimum, about 52K here and more where more tools load). The engine's pre-retry compaction therefore runs on the spent model first, and the child must still end on its fallback model with the settings file byte-identical.
+- The driver runs on Windows too: the process table comes from the CIM process list instead of `ps`/`pgrep`, and `senpi` resolves through PATHEXT.
+
+`task-runtime-fallback-mock-provider.ts` serves the new model. `task-runtime-fallback-e2e.windows.test.ts` runs the child-process runner through `user-fallback`, `limit-after-tool` and `limit-near-compaction` on Windows, where every task child is a process child.
+## 2026-10-07 - A bundled visualize skill for inline HTML pages (#9700)
+
+Agents can show a self-contained HTML page inline in a thread (senpi `show_html_page`, the desktop `html_preview` / `html_render`), but nothing told them how to make the page good.
+
+- `skills/visualize/SKILL.md`: a short router. Figures come from `data-scientist` (DuckDB or Polars, every number traceable to its query, chart choice from its `references/visualization.md`) and design from `frontend`. The skill itself owns only what is particular to an inline page: no network, the host's theme tokens, fluid width, a figure that reads with scripts off, designed empty states, fallbacks for pages opened outside the app, axis labels kept out of a stretched SVG, and render-and-look in both themes at 390 px and the reply width before showing.
+- Registered as a native senpi skill: `plugin/scripts/native-skill-sources.mjs` (+ test), `skills-sync.test.ts` (expected and native names), telemetry `BUILTIN_SKILL_NAMES`, and the skills AGENTS.md tables.
+
+## 2026-10-07 - Lost background revival notifies the parent after session start (#9498)
+
+`components/task/completion-bridge.ts` observes the nonterminal-to-`lost` edge
+inside a store mutation, as well as normal terminal transitions. Bounded revival
+retries can exhaust after startup notification recovery has returned; the old
+transition-only bridge would persist `lost` without waking the parent until
+another session start. The normal notifier still owns epoch deduplication and
+delivery. Mutating an already-lost record never sends another notification.
+
+`completion-bridge.test.ts` starts a background child and applies the real
+reconciliation loss reducer twice through the observing store. The parent gets
+exactly one lost notification; the pre-fix bridge sends none.
+
 ## 2026-10-07 - Memory maintenance runs write receipts, unrecoverable runs are quarantined, and recovery is kill-tested (#9689)
 
 Reflection and dream runs recorded their outcome only in per-run files, and startup reconciliation had three dead ends: invalid terminal timestamps threw a `TypeError` on every pass, an unreadable ledger kept the reservation forever, and a supervisor that died after its child committed a valid tip failed the run and deleted the worktree.
