@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.1.27] - 2026-10-08
+
+**omo runs on senpi 2026.10.10-9, which stops automatic turns from running without bound.** After one message from you, stream-rule nudges, goal continuations and other automatic follow-ups pause after 150 turns, or once 12 automatic turns in a minute do no work, and each stream rule corrects a message at most once. When it pauses, the session says so, and your next message picks it back up. Full engine notes: [senpi 2026.10.10-9](https://github.com/code-yeongyu/senpi/releases/tag/v2026.10.10-9). ([senpi#2967](https://github.com/code-yeongyu/senpi/issues/2967), [senpi#2969](https://github.com/code-yeongyu/senpi/pull/2969), [#9772](https://github.com/code-yeongyu/oh-my-openagent/pull/9772))
+
+**A required question can't be read as permission.** senpi's `ask_user_question` accepts `required: true` for a question that gates an action, such as an approval before an irreversible step: if it times out, is dismissed or can't be shown, the model is told not to take that action. ([senpi#2949](https://github.com/code-yeongyu/senpi/issues/2949), [senpi#2959](https://github.com/code-yeongyu/senpi/pull/2959))
+
+**The configuration guide documents the Anthropic 1-hour prompt cache and the cache keep-alive.** ([#9770](https://github.com/code-yeongyu/oh-my-openagent/issues/9770), [#9771](https://github.com/code-yeongyu/oh-my-openagent/pull/9771))
+
+### Fixed
+
+**Memory locks stop churning on machines with many sessions.** A session waiting on a memory lock no longer republishes a recovery lock on every retry: it reads first, and lock polls back off with jitter instead of a fixed 25 ms. Locks and candidate files left by processes that died are reclaimed, so the lock directory stops growing. ([#9749](https://github.com/code-yeongyu/oh-my-openagent/issues/9749), [#9750](https://github.com/code-yeongyu/oh-my-openagent/pull/9750))
+
+**Single-turn answers no longer carry the progress-ledger block.** Hephaestus and Sisyphus keep the Now/Next ledger for multi-step work tracked in todos; a request finished in one turn gets a plain answer, without lines such as `Next: none`. Thanks to @cynkai. ([#9616](https://github.com/code-yeongyu/oh-my-openagent/issues/9616), [#9676](https://github.com/code-yeongyu/oh-my-openagent/pull/9676))
+
+**A provider that sets its own `anthropic-beta` header keeps the betas a request needs**, so Claude 5.5 models through such a route no longer fail their first call. ([senpi#2957](https://github.com/code-yeongyu/senpi/issues/2957), [senpi#2963](https://github.com/code-yeongyu/senpi/pull/2963))
+
+**Deprecating platform packages for a release that never shipped rechecks the registry before failing**, so a deprecation that is still propagating no longer fails the workflow. ([#9769](https://github.com/code-yeongyu/oh-my-openagent/pull/9769))
+
+## [5.1.26] - 2026-10-08
+
+5.1.25 was not released: its Linux x64 binaries went over the 150 MiB per-binary size budget during publishing, so no `omo-ai`, `lazycodex-ai`, `oh-my-opencode` or `oh-my-openagent` 5.1.25 exists. Everything planned for it ships here. Some 5.1.25 platform packages did reach npm and are deprecated; nothing installs them.
+
 **omo runs on senpi 2026.10.10-8, which keeps a saved MCP sign-in with the authorization server that issued it.** The bundled MCP SDK moves to 1.32.1 (GHSA-6qxp-vccf-f47h), and senpi records which authorization server issued each saved sign-in and refreshes only there. If an MCP server's authorization server changes, you are asked to sign in again instead. MCP servers signed in with very old senpi versions may ask you to sign in again once their access token expires. An MCP HTTP endpoint that redirects to a different origin is no longer followed, and the connect error names both origins and the URL to put in the server's config. Full engine notes: [senpi 2026.10.10-8](https://github.com/code-yeongyu/senpi/releases/tag/v2026.10.10-8). ([senpi#2940](https://github.com/code-yeongyu/senpi/issues/2940), [senpi#2944](https://github.com/code-yeongyu/senpi/pull/2944), [#9757](https://github.com/code-yeongyu/oh-my-openagent/pull/9757))
 
 **A relayed report or a quoted mention no longer turns on ultrawork.** A message that opens with a sender header (`[REPORT]`, `[a -> b]`, `Name (id) to recipient:`), a Markdown block quote, or a double-quoted span is now read as someone else's words, so pasting a report that describes ultrawork into a session no longer arms it there. A skill name inside an identifier, a path, a URL, or a prohibition ("no ultrawork", "do not use mass-ulw") no longer arms ultrawork or a skill pointer either. Typed asks, such as "ulw <task>" or a keyword at the end of your own sentence, still arm. ([#9600](https://github.com/code-yeongyu/oh-my-openagent/issues/9600), [#9606](https://github.com/code-yeongyu/oh-my-openagent/pull/9606), [#9738](https://github.com/code-yeongyu/oh-my-openagent/issues/9738), [#9740](https://github.com/code-yeongyu/oh-my-openagent/issues/9740), [#9744](https://github.com/code-yeongyu/oh-my-openagent/pull/9744))
@@ -18,6 +40,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Arch Linux users can install OmO from the community AUR package `omo-bin`.** The install guide now documents it: `yay -S omo-bin` (or any AUR helper) installs the official Linux binary from our GitHub releases after checking it against the release's `SHA256SUMS`. It's maintained by @sTiKyt, not the OmO team, so update it with your AUR helper rather than `omo update`. ([#9584](https://github.com/code-yeongyu/oh-my-openagent/issues/9584), [#9610](https://github.com/code-yeongyu/oh-my-openagent/pull/9610))
 
 ### Fixed
+
+**The release binary size budget is 160 MiB, and every build reports its headroom.** Linux x64 reached 157.6 MB, over the old 150 MiB budget, which stopped 5.1.25. The budget exists to keep each install and update download small; release builds now print each target's headroom and warn when one is within 5 MiB of the budget. ([#9760](https://github.com/code-yeongyu/oh-my-openagent/pull/9760))
 
 **A task child spawned with an explicit model runs on that model, or the spawn fails and says why.** A pin with a thinking level such as `anthropic/claude-opus-5-5:medium` used to be dropped silently, so the child ran on the default model instead; the pin is now resolved once against the live model registry, and the child's own reported model is checked after it starts. A model that cannot be resolved, or a child that comes up on a different model, fails the spawn with a typed error, and `task_output` shows the model the child actually ran next to the one requested. ([#9722](https://github.com/code-yeongyu/oh-my-openagent/issues/9722), [#9736](https://github.com/code-yeongyu/oh-my-openagent/pull/9736))
 
